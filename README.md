@@ -1,171 +1,253 @@
-# Sikuwa
+Sikuwa 工具使用文档
+介绍
+Sikuwa 是一款基于 Nuitka 的 Python 项目打包工具，专注于提供简单高效的跨平台编译解决方案。它通过配置化管理和自动化流程，将 Python 项目转换为独立可执行文件，支持 Windows、Linux 和 macOS 多平台分发。
 
-Sikuwa 是一款基于 Nuitka 的 Python 项目构建工具，旨在简化 Python 代码到可执行文件的编译、打包流程，支持跨平台构建、自动化脚本执行和增量构建，帮助开发者快速分发 Python 项目。
+核心优势
+跨平台支持：同时兼容 Windows、Linux 和 macOS 系统
+灵活配置：通过 TOML 配置文件定制编译参数，满足不同项目需求
+双重环境检查：自动检测系统依赖和编译环境，提前问题排查
+双重使用模式：支持预编译版（独立工具链）和源码版（Python 库）两种使用方式
+详细日志与清单：生成构建日志和输出清单，便于版本管理和分发
+更新说明
+v0.1.0 主要特性
+基础功能实现
 
+完整的项目初始化与配置管理
+多平台编译支持（Windows/Linux/macOS）
+环境检查与依赖验证
+构建清单自动生成
+核心优化
 
-## 功能特点
+完善的日志系统，支持详细模式追踪编译过程
+资源文件自动复制机制
+构建缓存与强制重建功能
+命令行交互体验优化
+兼容性提升
 
-- **便捷编译**：通过配置文件 `build.ski` 定义构建规则，无需记忆复杂的 Nuitka 命令参数
-- **跨平台支持**：一键构建 Windows/macOS/Linux 平台的可执行文件
-- **自动化流程**：支持预构建（preBuild）和后构建（postBuild）命令，实现依赖安装、文件处理等自动化操作
-- **资源管理**：自动复制静态文件、配置文件等资源到输出目录
-- **增量构建**：仅在源码变更时重新编译，提升开发效率
-- **版本管理**：支持构建时自动递增版本号
-- **产物管理**：提供清理临时文件和打包为 ZIP 的功能
+支持 Python 3.7+ 版本
+兼容最新 Nuitka 编译选项
+适配主流 C 编译器（MSVC/GCC/MinGW）
+预编译版使用方法（独立工具链）
+预编译版可作为独立工具链使用，无需安装 Python 环境，只需添加到系统 PATH 即可全局调用。
 
+安装配置
+从官方渠道下载对应平台的预编译包
+解压到本地目录（如 C:\sikuwa 或 ~/sikuwa）
+将解压目录添加到系统环境变量 PATH 中
+验证安装：
+sikuwa --version
+命令大全
+1. 初始化配置
+# 创建默认配置文件（sikuwa.toml）
+sikuwa init
 
-## 安装
+# 创建自定义配置文件
+sikuwa init -o my_config.toml
 
-1. 确保已安装 Python 3.7+
-2. 安装依赖：
-   ```bash
-   pip install nuitka
-   ```
-3. 克隆或下载 Sikuwa 工具到本地，将工具目录添加到系统 PATH 或直接在项目中使用
+# 强制覆盖已存在的配置文件
+sikuwa init --force
+2. 构建项目
+# 构建所有平台（默认配置）
+sikuwa build
 
+# 只构建特定平台
+sikuwa build -p windows
+sikuwa build -p linux
+sikuwa build -p macos
 
-## 快速开始
+# 使用详细输出模式（查看编译过程）
+sikuwa build -v
 
-### 1. 项目结构（示例）
+# 使用指定配置文件
+sikuwa build -c my_config.toml
 
-```
-my_project/
-├── build.ski       # 构建配置文件（必需）
-├── src/            # 源码目录（可通过配置修改）
-│   └── main.py     # 入口脚本（可通过配置修改）
-├── static/         # 静态资源（示例）
-└── config.ini      # 配置文件（示例）
-```
+# 强制重新构建（忽略缓存）
+sikuwa build --force
+3. 查看项目信息
+# 显示当前项目配置信息
+sikuwa info
 
+# 显示指定配置文件的信息
+sikuwa info -c my_config.toml
+4. 环境检查
+# 检查系统环境和依赖项
+sikuwa doctor
+5. 清理构建文件
+# 删除输出目录和构建缓存
+sikuwa clean
+6. 查看帮助
+# 显示总体帮助
+sikuwa --help
 
-### 2. 创建配置文件 `build.ski`
+# 显示特定命令帮助
+sikuwa build --help
 
-```ini
-# 项目基本信息
-project = "MyApp"
-version = "1.0.0"
-srcDir = "src"           # 源码目录
-mainScript = "main.py"   # 入口脚本
-outputDir = "dist"       # 输出目录
-buildDir = "build"       # 临时构建目录
+# 显示配置文件帮助
+sikuwa help config
+7. 版本信息
+# 显示版本信息
+sikuwa version
+源码版使用方法（Python 库）
+源码版可作为 Python 库集成到其他项目中，通过 API 调用实现编译功能。
 
-# 目标平台（current/windows/macos/linux）
-platforms = ["current", "windows"]
+安装方法
+# 从源码安装
+pip install .
 
-# Nuitka 编译参数
-nuitka {
-  standalone = true      # 生成独立可执行文件
-  followImports = true   # 跟踪导入依赖
-  windowsIcon = "icon.ico"  # Windows 图标（可选）
-  includePackages = ["requests"]  # 强制包含的包
-}
+# 开发模式安装
+pip install -e .
+核心 API 使用示例
+1. 基础构建流程
+fromikuwa.config import ConfigManager
+fromikuwa.builder import SikuwaBuilder
 
-# 资源文件（从源路径复制到目标路径）
-resources {
-  from "static/*" to "static"  # 复制 static 目录下的文件
-  from "config.ini" to "."     # 复制配置文件到根目录
-}
+# 加载配置
+config = ConfigManager.load_config("sikuwa.toml")
 
-# 构建前命令（如安装依赖）
-preBuild {
-  commands = [
-    "pip install -r requirements.txt"
-  ]
-}
+# 初始化构建器
+builder = SikuwaBuilder(config, verbose=True)
 
-# 构建后命令（如清理临时文件）
-postBuild {
-  commands = [
-    "echo 构建完成！"
-  ]
-}
-```
+# 执行构建（所有平台）
+builder.build()
 
+# 执行构建（特定平台）
+builder.build(platform="windows")
+2. 自定义配置
+fromikuwa.config import BuildConfig, NuitkaOptions
+fromikuwa.builder import SikuwaBuilder
 
-### 3. 执行构建命令
+# 创建自定义配置
+nuitka_options = NuitkaOptions(
+    standalone=True,
+    onefile=True,
+    enable_console=False,
+    windows_icon="app_icon.ico"
+)
 
-在项目根目录运行以下命令：
+config = BuildConfig(
+    project_name="my_app",
+    main_script="main.py",
+    version="1.0.0",
+    platforms=["windows", "linux"],
+    nuitka_options=nuitka_options,
+    resources=["data/*"]
+)
 
-| 命令 | 说明 |
-|------|------|
-| `sikuwa build` | 构建当前平台的项目（自动识别运行环境） |
-| `sikuwa build --platform windows` | 构建 Windows 平台的项目 |
-| `sikuwa build --auto-increment` | 构建并自动递增版本号（如 `1.0.0` → `1.0.1`） |
-| `sikuwa build --force` | 忽略增量缓存，强制重新构建 |
-| `sikuwa clean` | 清理临时构建文件 |
-| `sikuwa clean --clean-all` | 清理临时文件和输出目录（`dist`） |
-| `sikuwa package` | 将构建结果打包为 ZIP |
-| `sikuwa package --platform windows` | 打包指定平台的构建结果 |
-| `sikuwa help` | 查看帮助信息 |
+# 执行构建
+builder = SikuwaBuilder(config)
+builder.build(force=True)
+3. 清理构建文件
+fromikuwa.config import ConfigManager
+fromikuwa.builder import SikuwaBuilder
 
+config = ConfigManager.load_config()
+builder = SikuwaBuilder(config)
+builder.clean()  # 清理输出目录和构建目录
+4. 生成构建清单
+fromikuwa.config import ConfigManager
+fromikuwa.builder import SikuwaBuilder
 
-## 配置文件详解
+config = ConfigManager.load_config()
+builder = SikuwaBuilder(config)
+builder._generate_manifest()  # 生成构建清单文件
+编译指南
+前置条件
+Python 3.7 或更高版本
+系统编译器：
+Windows：MinGW-w64 (8.1.0+) 或 MSVC (2019+)
+Linux：GCC (7.3+)
+macOS：Xcode Command Line Tools
+依赖包：
+pip install nuitka click tomli tomli_w
+编译步骤
+准备配置文件
 
-`build.ski` 是 Sikuwa 的核心配置文件，支持以下配置项：
+# 生成默认配置
+sikuwa init
 
-### 顶层配置
+# 编辑配置文件（关键配置项）
+# 项目名称、入口文件、目标平台、Nuitka 选项等
+检查环境
 
-| 配置项 | 说明 | 默认值 |
-|--------|------|--------|
-| `project` | 项目名称 | `MyProject` |
-| `version` | 版本号 | `1.0.0` |
-| `srcDir` | 源码目录路径 | `src` |
-| `mainScript` | 入口脚本文件名（位于 `srcDir` 下） | `main.py` |
-| `outputDir` | 构建产物输出目录 | `dist` |
-| `buildDir` | 临时构建目录 | `build` |
-| `platforms` | 目标构建平台列表 | `["current"]` |
+sikuwa doctor
+确保所有检查项均显示 [OK]，解决任何 [FAIL] 项
 
+执行编译
 
-### `nuitka` 块（编译参数）
+# 基础编译（所有平台）
+sikuwa build
 
-| 配置项 | 说明 | 默认值 |
-|--------|------|--------|
-| `standalone` | 是否生成独立可执行文件 | `true` |
-| `followImports` | 是否跟踪导入的依赖 | `true` |
-| `removeOutput` | 是否清理中间输出 | `true` |
-| `showProgress` | 是否显示编译进度 | `true` |
-| `includePackages` | 强制包含的包列表 | `[]` |
-| `includeModules` | 强制包含的模块列表 | `[]` |
-| `excludeModules` | 排除的模块列表 | `[]` |
-| `windowsIcon` | Windows 平台图标路径（`ico` 文件） | `None` |
-| `windowsCompany` | Windows 公司名称 | `None` |
-| `windowsProduct` | Windows 产品名称 | `None` |
-| `macosAppName` | macOS 应用名称 | `None` |
+# 单平台编译
+sikuwa build -p windows
 
+# 详细模式编译（用于调试）
+sikuwa build -v
+查看输出 编译成功后，输出文件位于配置指定的 output_dir（默认 dist 目录），按平台分类存放：
 
-### `resources` 块（资源文件）
+Windows：dist/项目名-windows/
+Linux：dist/项目名-linux/
+macOS：dist/项目名-macos/
+验证结果 构建清单文件 dist/build_manifest.json 包含所有输出文件信息：
 
-定义需要复制到输出目录的资源文件，格式：
-```ini
-resources {
-  from "源路径" to "目标路径"  # 支持 glob 模式（如 "static/*"）
-}
-```
+项目名称和版本
+构建时间
+各平台输出文件路径和大小
+自举指南
+自举是指使用 Sikuwa 工具编译自身源代码，生成独立的 Sikuwa 可执行文件。
 
+自举步骤
+获取源代码
 
-### `preBuild`/`postBuild` 块（构建前后命令）
+git clone https://github.com/yourusername/sikuwa.git
+cd sikuwa
+准备环境
 
-定义构建前/后需要执行的命令，格式：
-```ini
-preBuild {
-  commands = [
-    "命令1",
-    "命令2"
-  ]
-}
-```
-支持变量替换：`${PROJECT_NAME}`、`${VERSION}`、`${OUTPUT_DIR}`、`${PLATFORM}`
+# 安装依赖
+pip install -r requirements.txt
 
+# 检查环境
+python -m sikuwa doctor
+配置自举参数
 
-## 构建产物
+# 生成配置文件
+python -m sikuwa init
 
-- 构建结果默认输出到 `dist/项目名-版本-平台/` 目录
-- 日志文件保存到 `sikuwa_logs/` 目录
-- 打包后的 ZIP 文件位于 `dist/` 目录下
+# 编辑配置文件（关键配置）
+# 在 sikuwa.toml 中确保以下配置
+[sikuwa]
+project_name = "sikuwa"
+main_script = "sikuwa/__main__.py"
+version = "0.1.0"
+platforms = ["windows", "linux", "macos"]
 
+[sikuwa.nuitka]
+standalone = true
+onefile = true
+follow_imports = true
+enable_console = true
+执行自举编译
 
-## 注意事项
+# 使用源码版编译自身
+python -m sikuwa build -v
+验证自举结果
 
-- 跨平台构建需确保本地环境支持（如在 Linux 上构建 Windows 产物需安装 Wine）
-- 复杂项目可能需要手动配置 `includePackages` 或 `includeModules` 以确保依赖被正确打包
-- 增量构建基于源码目录的哈希值判断，修改配置文件不会触发重新构建（需使用 `--force`）
+# 进入输出目录
+cd dist/sikuwa-<当前平台>
+
+# 验证生成的可执行文件
+./sikuwa --version  # Linux/macOS
+sikuwa.exe --version  # Windows
+测试自举版本
+
+# 创建测试项目
+mkdir test_bootstrap && cd test_bootstrap
+
+# 使用自举生成的工具初始化项目
+../dist/sikuwa-<当前平台>/sikuwa init
+
+# 创建简单入口文件
+echo 'print("Hello, Sikuwa!")' > main.py
+
+# 构建测试项目
+../dist/sikuwa-<当前平台>/sikuwa build
+若所有步骤正常执行，说明自举成功，生成的可执行文件可作为独立工具链使用，无需依赖 Python 环境。

@@ -10,33 +10,26 @@ Sikuwa 是一款基于 Nuitka 的 Python 项目打包工具，专注于提供简
 - **双重环境检查**：自动检测系统依赖和编译环境，提前问题排查
 - **双重使用模式**：支持预编译版（独立工具链）和源码版（Python 库）两种使用方式
 - **详细日志与清单**：生成构建日志和输出清单，便于版本管理和分发
-- **超详细日志系统**：34 级精细化日志追踪，支持彩色输出和性能监控
 
 ## 更新说明
 
 ### v0.1.0 主要特性
-1. **架构优化**
-   - 重构配置管理系统，支持更灵活的配置选项
-   - 改进日志系统，支持 34 级精细化日志追踪
-   - 优化构建流程，提升编译速度和稳定性
+1. **基础功能实现**
+   - 完整的项目初始化与配置管理
+   - 多平台编译支持（Windows/Linux/macOS）
+   - 环境检查与依赖验证
+   - 构建清单自动生成
 
-2. **功能增强**
-   - 新增 Nuitka 动态加载器，支持打包版本和系统版本自动切换
-   - 增强配置验证机制，支持多格式配置文件（TOML/YAML/JSON）
-   - 改进资源文件处理，支持复杂目录结构复制
-   - 新增构建清单自动生成功能
+2. **核心优化**
+   - 完善的日志系统，支持详细模式追踪编译过程
+   - 资源文件自动复制机制
+   - 构建缓存与强制重建功能
+   - 命令行交互体验优化
 
-3. **用户体验改进**
-   - 命令行界面优化，支持更多实用命令
-   - 详细错误报告和调试信息
-   - 性能计时器和函数追踪装饰器
-   - 环境诊断工具（doctor 命令）
-
-4. **兼容性提升**
+3. **兼容性提升**
    - 支持 Python 3.7+ 版本
    - 兼容最新 Nuitka 编译选项
    - 适配主流 C 编译器（MSVC/GCC/MinGW）
-   - 支持 Windows 图标和元数据配置
 
 ## 预编译版使用方法（独立工具链）
 
@@ -92,9 +85,6 @@ sikuwa info
 
 # 显示指定配置文件的信息
 sikuwa info -c my_config.toml
-
-# 显示完整配置（JSON格式）
-sikuwa show-config --format json
 ```
 
 #### 4. 环境检查
@@ -107,21 +97,9 @@ sikuwa doctor
 ```bash
 # 删除输出目录和构建缓存
 sikuwa clean
-
-# 详细清理模式
-sikuwa clean -v
 ```
 
-#### 6. 配置验证
-```bash
-# 验证配置文件有效性
-sikuwa validate
-
-# 验证指定配置文件
-sikuwa validate -c my_config.toml
-```
-
-#### 7. 查看帮助
+#### 6. 查看帮助
 ```bash
 # 显示总体帮助
 sikuwa --help
@@ -133,7 +111,7 @@ sikuwa build --help
 sikuwa help config
 ```
 
-#### 8. 版本信息
+#### 7. 版本信息
 ```bash
 # 显示版本信息
 sikuwa version
@@ -150,17 +128,14 @@ pip install .
 
 # 开发模式安装
 pip install -e .
-
-# 安装依赖
-pip install nuitka click tomli tomli_w pyyaml
 ```
 
 ### 核心 API 使用示例
 
 #### 1. 基础构建流程
 ```python
-from sikuwa.config import ConfigManager
-from sikuwa.builder import SikuwaBuilder
+fromikuwa.config import ConfigManager
+fromikuwa.builder import SikuwaBuilder
 
 # 加载配置
 config = ConfigManager.load_config("sikuwa.toml")
@@ -177,17 +152,15 @@ builder.build(platform="windows")
 
 #### 2. 自定义配置
 ```python
-from sikuwa.config import BuildConfig, NuitkaOptions
-from sikuwa.builder import SikuwaBuilder
+fromikuwa.config import BuildConfig, NuitkaOptions
+fromikuwa.builder import SikuwaBuilder
 
 # 创建自定义配置
 nuitka_options = NuitkaOptions(
     standalone=True,
     onefile=True,
     enable_console=False,
-    windows_icon="app_icon.ico",
-    include_packages=["requests", "click"],
-    nofollow_import_to=["numpy", "pandas"]
+    windows_icon="app_icon.ico"
 )
 
 config = BuildConfig(
@@ -196,157 +169,46 @@ config = BuildConfig(
     version="1.0.0",
     platforms=["windows", "linux"],
     nuitka_options=nuitka_options,
-    resources=["config.json", "data/"]
+    resources=["data/*"]
 )
 
 # 执行构建
-builder = SikuwaBuilder(config, verbose=True)
+builder = SikuwaBuilder(config)
 builder.build(force=True)
 ```
 
-#### 3. 使用日志系统
+#### 3. 清理构建文件
 ```python
-from sikuwa.log import get_logger, PerfTimer, LogLevel
-
-# 获取日志器
-logger = get_logger("my_app", level=LogLevel.TRACE_FLOW)
-
-# 使用不同级别日志
-logger.trace_io("I/O 操作追踪")
-logger.debug_detail("详细调试信息")
-logger.info_operation("业务操作记录")
-logger.warn_minor("轻微警告")
-logger.error_minimal("业务错误")
-
-# 性能计时
-with PerfTimer("关键操作", logger):
-    # 执行耗时操作
-    time.sleep(0.1)
-
-# 函数追踪装饰器
-@logger.trace_function
-def my_function(x, y):
-    return x + y
-
-# 方法追踪装饰器
-@logger.trace_method
-def my_method(self, data):
-    return process_data(data)
-```
-
-#### 4. 清理构建文件
-```python
-from sikuwa.config import ConfigManager
-from sikuwa.builder import SikuwaBuilder
+fromikuwa.config import ConfigManager
+fromikuwa.builder import SikuwaBuilder
 
 config = ConfigManager.load_config()
 builder = SikuwaBuilder(config)
 builder.clean()  # 清理输出目录和构建目录
 ```
 
-#### 5. 生成构建清单
+#### 4. 生成构建清单
 ```python
-from sikuwa.config import ConfigManager
-from sikuwa.builder import SikuwaBuilder
+fromikuwa.config import ConfigManager
+fromikuwa.builder import SikuwaBuilder
 
 config = ConfigManager.load_config()
 builder = SikuwaBuilder(config)
 builder._generate_manifest()  # 生成构建清单文件
 ```
 
-#### 6. 配置管理
-```python
-from sikuwa.config import BuildConfig, NuitkaOptions, create_config
-
-# 创建默认配置文件
-create_config("custom_config.toml")
-
-# 从文件加载配置
-config = ConfigManager.load_config("custom_config.toml")
-
-# 验证配置
-errors = validate_config(config)
-if errors:
-    print("配置错误:", errors)
-
-# 保存配置
-config.save_to_toml("backup_config.toml")
-```
-
 ## 编译指南
 
 ### 前置条件
-- **Python 环境**：Python 3.7 或更高版本
-- **系统编译器**：
+- Python 3.7 或更高版本
+- 系统编译器：
   - Windows：MinGW-w64 (8.1.0+) 或 MSVC (2019+)
   - Linux：GCC (7.3+)
   - macOS：Xcode Command Line Tools
-- **依赖包**：
+- 依赖包：
   ```bash
-  pip install nuitka click tomli tomli_w pyyaml
+  pip install nuitka click tomli tomli_w
   ```
-
-### 配置文件说明
-
-#### 基础配置示例（sikuwa.toml）
-```toml
-[sikuwa]
-project_name = "my_app"
-version = "1.0.0"
-description = "My Python Application"
-author = "Your Name"
-
-main_script = "main.py"
-src_dir = "."
-output_dir = "dist"
-build_dir = "build"
-platforms = ["windows", "linux"]
-
-[sikuwa.nuitka]
-standalone = true
-onefile = true
-follow_imports = true
-show_progress = true
-enable_console = true
-
-include_packages = ["requests", "click"]
-include_data_files = [
-    "config.json",
-    "data/images/icon.png"
-]
-
-windows_icon = "icon.ico"
-windows_company_name = "My Company"
-windows_product_name = "My Product"
-```
-
-#### 高级配置选项
-```toml
-[sikuwa.nuitka]
-# 优化选项
-optimize = true
-lto = false  # 链接时优化
-
-# 插件管理
-enable_plugins = ["tk-inter", "numpy"]
-disable_plugins = ["django"]
-
-# 排除模块
-nofollow_imports = ["test", "debug"]
-nofollow_import_to = ["numpy", "pandas"]
-
-# 平台特定配置
-windows_file_version = "1.0.0.0"
-windows_product_version = "1.0.0"
-macos_app_bundle = true
-macos_icon = "app_icon.icns"
-
-# 额外参数
-extra_args = [
-    "--include-module=secret_module",
-    "--windows-uac-admin"
-]
-```
 
 ### 编译步骤
 
@@ -375,58 +237,19 @@ extra_args = [
    
    # 详细模式编译（用于调试）
    sikuwa build -v
-   
-   # 强制重新构建
-   sikuwa build --force
    ```
 
 4. **查看输出**
    编译成功后，输出文件位于配置指定的 `output_dir`（默认 `dist` 目录），按平台分类存放：
-   - Windows：`dist/项目名-windows/项目名.exe`
-   - Linux：`dist/项目名-linux/项目名`
-   - macOS：`dist/项目名-macos/项目名`
+   - Windows：`dist/项目名-windows/`
+   - Linux：`dist/项目名-linux/`
+   - macOS：`dist/项目名-macos/`
 
 5. **验证结果**
    构建清单文件 `dist/build_manifest.json` 包含所有输出文件信息：
    - 项目名称和版本
    - 构建时间
    - 各平台输出文件路径和大小
-   - 编译选项摘要
-
-### 高级编译技巧
-
-#### 1. 性能优化编译
-```bash
-# 启用 LTO 优化
-sikuwa build --extra-args="--lto=yes"
-
-# 启用最大优化级别
-sikuwa build --extra-args="--optimize=3"
-```
-
-#### 2. 资源文件处理
-```toml
-[sikuwa.nuitka]
-include_data_files = [
-    "config.json=config/",
-    "data/images/=images/",
-    "*.txt=documents/"
-]
-
-include_data_dirs = [
-    "static/=static/",
-    "templates/=templates/"
-]
-```
-
-#### 3. 调试信息保留
-```toml
-[sikuwa.nuitka]
-# 保留调试符号
-debug = true
-# 生成编译报告
-generate_report = true
-```
 
 ## 自举指南
 
@@ -435,7 +258,10 @@ generate_report = true
 ### 自举步骤
 
 1. **获取源代码**
-
+   ```bash
+   git clone https://github.com/yourusername/sikuwa.git
+   cd sikuwa
+   ```
 
 2. **准备环境**
    ```bash
@@ -451,44 +277,27 @@ generate_report = true
    # 生成配置文件
    python -m sikuwa init
    
-   # 编辑配置文件 sikuwa.toml
+   # 编辑配置文件（关键配置）
+   # 在 sikuwa.toml 中确保以下配置
    ```
    ```toml
    [sikuwa]
    project_name = "sikuwa"
    main_script = "sikuwa/__main__.py"
-   version = "1.2.0"
+   version = "0.1.0"
    platforms = ["windows", "linux", "macos"]
-   description = "Sikuwa Python Packager"
-   author = "Sikuwa Team"
    
    [sikuwa.nuitka]
    standalone = true
    onefile = true
    follow_imports = true
    enable_console = true
-   show_progress = true
-   
-   include_packages = [
-       "click", "tomli", "tomli_w", "pyyaml"
-   ]
-   
-   nofollow_import_to = [
-       "numpy", "pandas", "matplotlib"
-   ]
-   
-   windows_icon = "assets/icon.ico"
-   windows_company_name = "Sikuwa"
-   windows_product_name = "Sikuwa Packager"
    ```
 
 4. **执行自举编译**
    ```bash
    # 使用源码版编译自身
-   python -m sikuwa build -v --force
-   
-   # 或者使用详细模式追踪编译过程
-   python -m sikuwa build --verbose --show-progress
+   python -m sikuwa build -v
    ```
 
 5. **验证自举结果**
@@ -499,10 +308,6 @@ generate_report = true
    # 验证生成的可执行文件
    ./sikuwa --version  # Linux/macOS
    sikuwa.exe --version  # Windows
-   
-   # 测试功能完整性
-   ./sikuwa doctor
-   ./sikuwa info
    ```
 
 6. **测试自举版本**
@@ -517,53 +322,7 @@ generate_report = true
    echo 'print("Hello, Sikuwa!")' > main.py
    
    # 构建测试项目
-   ../dist/sikuwa-<当前平台>/sikuwa build -v
-   
-   # 验证测试项目输出
-   cd dist/test_project-<平台>/
-   ./test_project  # 运行编译后的程序
+   ../dist/sikuwa-<当前平台>/sikuwa build
    ```
 
-### 自举优化技巧
-
-#### 1. 减小可执行文件大小
-```toml
-[sikuwa.nuitka]
-# 启用压缩
-enable_compression = true
-# 移除调试信息
-strip = true
-# 使用 UPX 压缩（如已安装）
-use_upx = true
-```
-
-#### 2. 提高启动速度
-```toml
-[sikuwa.nuitka]
-# 启用预编译缓存
-enable_cache = true
-# 优化导入查找
-improved_recursion = true
-```
-
-#### 3. 多平台自举
-```bash
-# 交叉编译支持（需要相应工具链）
-sikuwa build -p windows --cross-compile
-sikuwa build -p linux --cross-compile  
-sikuwa build -p macos --cross-compile
-```
-
-### 自举验证清单
-
-完成自举后，请验证以下项目：
-
-- [ ] 可执行文件能正常启动并显示版本信息
-- [ ] 所有核心命令（build、clean、init、info）正常工作
-- [ ] 配置文件解析和验证功能正常
-- [ ] 日志系统和错误处理正常工作
-- [ ] 生成的程序能在目标平台独立运行
-- [ ] 编译后的文件大小在合理范围内
-- [ ] 启动速度和性能符合预期
-
-若所有验证项通过，说明自举成功，生成的可执行文件可作为独立工具链使用，无需依赖 Python 环境。
+若所有步骤正常执行，说明自举成功，生成的可执行文件可作为独立工具链使用，无需依赖 Python 环境。

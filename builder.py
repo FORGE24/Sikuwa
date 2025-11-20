@@ -286,8 +286,12 @@ class SikuwaBuilder:
         
         # 输出目录
         output_dir = self.output_dir / f"{self.config.project_name}-{platform}"
-        cmd.extend(["--output-dir", str(output_dir)])
+        cmd.append(f"--output-dir={output_dir}")
         self.logger.trace_state(f"输出目录: {output_dir}")
+        
+        # 输出文件名
+        cmd.append(f"--output-filename={self.config.project_name}")
+        self.logger.trace_state(f"输出文件名: {self.config.project_name}")
         
         # 包含数据文件
         if self.config.nuitka_options.include_data_files:
@@ -298,8 +302,18 @@ class SikuwaBuilder:
         # 包含数据目录
         if self.config.nuitka_options.include_data_dirs:
             for data_dir in self.config.nuitka_options.include_data_dirs:
-                cmd.append(f"--include-data-dir={data_dir}")
-                self.logger.trace_state(f"包含数据目录: {data_dir}")
+                # 确保数据目录是字典格式
+                if isinstance(data_dir, dict) and 'src' in data_dir and 'dest' in data_dir:
+                    src = data_dir['src']
+                    dest = data_dir['dest']
+                    # Nuitka 格式: --include-data-dir=源路径=目标路径
+                    include_dir_arg = f"--include-data-dir={src}={dest}"
+                    cmd.append(include_dir_arg)
+                    self.logger.trace_state(f"包含数据目录: {src} -> {dest}")
+                else:
+                    # 兼容旧格式
+                    cmd.append(f"--include-data-dir={data_dir}")
+                    self.logger.trace_state(f"包含数据目录: {data_dir}")
         
         # 额外选项
         if self.config.nuitka_options.extra_args:
@@ -345,6 +359,7 @@ class SikuwaBuilder:
                 
                 # 实时读取输出
                 line_count = 0
+                error_lines = []
                 for line in process.stdout:
                     line = line.rstrip()
                     line_count += 1
@@ -352,6 +367,10 @@ class SikuwaBuilder:
                     # 写入日志文件
                     f.write(line + "\n")
                     f.flush()
+                    
+                    # 收集错误信息
+                    if 'error' in line.lower():
+                        error_lines.append(line)
                     
                     # 输出到控制台
                     if self.verbose:
@@ -375,6 +394,13 @@ class SikuwaBuilder:
                 else:
                     self.logger.error_minimal(f"[FAIL] Nuitka 编译失败 (返回码: {return_code})")
                     self.logger.error_minimal(f"查看日志: {log_file}")
+                    
+                    # 输出收集到的错误信息
+                    if error_lines:
+                        self.logger.error_minimal("\n[Nuitka] 错误信息:")
+                        for error_line in error_lines[-20:]:  # 显示最后20条错误信息
+                            self.logger.error_minimal(f"[Nuitka] {error_line}")
+                    
                     raise RuntimeError(f"Nuitka 编译失败 (返回码: {return_code})")
                 
         except Exception as e:

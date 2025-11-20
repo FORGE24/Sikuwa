@@ -53,7 +53,7 @@ class NuitkaOptions:
     include_packages: List[str] = field(default_factory=list)
     include_modules: List[str] = field(default_factory=list)
     include_data_files: List[str] = field(default_factory=list)
-    include_data_dirs: List[str] = field(default_factory=list)
+    include_data_dirs: List[Dict[str, str]] = field(default_factory=list)
     
     nofollow_imports: List[str] = field(default_factory=list)
     nofollow_import_to: List[str] = field(default_factory=list)

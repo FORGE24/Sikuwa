@@ -1,0 +1,46 @@
+[sikuwa]
+project_name = "sikuwa"
+version = "1.2.0"
+main_script = "sikuwa/__main__.py"
+src_dir = "."
+output_dir = "dist"
+platforms = ["windows"]
+
+[sikuwa.nuitka]
+standalone = true
+onefile = false  # 推荐目录模式，方便调试
+
+# 只包含 Sikuwa 运行时需要的包
+include_packages = [
+    "click",
+    "tomli_w",
+]
+
+# 关键：将整个 Nuitka 包作为数据文件复制（不作为代码导入）
+include_data_dirs = [
+    # 复制整个 nuitka 包到 bundled_packages/
+    { src = ".venv/Lib/site-packages/nuitka", dest = "bundled_packages/nuitka" },
+    { src = ".venv/Lib/site-packages/nuitka-*.dist-info", dest = "bundled_packages/nuitka.dist-info" },
+    
+    # 复制 Nuitka 的依赖
+    { src = ".venv/Lib/site-packages/ordered_set", dest = "bundled_packages/ordered_set" },
+    { src = ".venv/Lib/site-packages/ordered_set-*.dist-info", dest = "bundled_packages/ordered_set.dist-info" },
+    
+    { src = ".venv/Lib/site-packages/zstandard", dest = "bundled_packages/zstandard" },
+    { src = ".venv/Lib/site-packages/zstandard-*.dist-info", dest = "bundled_packages/zstandard.dist-info" },
+]
+
+extra_args = [
+    # 关键：不要导入 nuitka（避免循环依赖）
+    "--nofollow-import-to=nuitka",
+    "--nofollow-import-to=ordered_set",
+    "--nofollow-import-to=zstandard",
+    
+    # 排除不必要的模块
+    "--nofollow-import-to=*.tests",
+    "--nofollow-import-to=pytest",
+    "--nofollow-import-to=setuptools",
+    
+    "--assume-yes-for-downloads",
+    "--show-progress",
+]

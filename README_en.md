@@ -13,6 +13,20 @@ Sikuwa is a Python project packaging tool based on Nuitka, focused on providing 
 
 ## Update Notes
 
+### v1.3.0 Key Features
+1. **Smart Cache System**
+   - High-performance C++ LRU caching algorithm
+   - Python wrapper interface for cross-platform calls
+   - Pure Python fallback mechanism for compatibility
+   - Intelligent cache key generation based on file content and build parameters
+   - Deep integration with the build process for automatic cache management
+   - Support for forced rebuild and cache cleanup functions
+
+2. **Performance Optimization**
+   - First build: ~30 seconds, cache hit: ~1.5 seconds
+   - Significantly reduced repeated build times
+   - Low memory usage with efficient cache management
+
 ### v1.2.0 Key Features
 1. **Basic Function Implementation**
    - Complete project initialization and configuration management
@@ -284,7 +298,7 @@ Bootstrapping refers to using the Sikuwa tool to compile its own source code, ge
    [sikuwa]
    project_name = "sikuwa"
    main_script = "sikuwa/__main__.py"
-   version = "1.2.0"
+   version = "1.3.0"
    platforms = ["windows"]
    
    [sikuwa.nuitka]

@@ -13,6 +13,20 @@ Sikuwa 是一款基于 Nuitka 的 Python 项目打包工具，专注于提供简
 
 ## 更新说明
 
+### v1.3.0 主要特性
+1. **智能缓存系统**
+   - 基于C++实现的高性能LRU缓存算法
+   - Python包装器接口，支持跨平台调用
+   - 纯Python回退机制，确保兼容性
+   - 智能缓存键生成策略，基于文件内容和构建参数
+   - 与构建流程深度集成，自动管理缓存
+   - 支持强制重建和缓存清理功能
+
+2. **性能优化**
+   - 首次构建约30秒，缓存命中约1.5秒
+   - 大幅减少重复构建时间
+   - 内存占用低，缓存管理高效
+
 ### v1.2.0 主要特性
 1. **基础功能实现**
    - 完整的项目初始化与配置管理
@@ -284,7 +298,7 @@ builder._generate_manifest()  # 生成构建清单文件
    [sikuwa]
    project_name = "sikuwa"
    main_script = "sikuwa/__main__.py"
-   version = "1.2.0"
+   version = "1.3.0"
    platforms = ["windows"]
    
    [sikuwa.nuitka]

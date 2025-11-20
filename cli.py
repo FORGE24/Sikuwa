@@ -9,8 +9,9 @@ from pathlib import Path
 from typing import Optional
 
 from sikuwa.config import ConfigManager, BuildConfig, create_config
-from sikuwa.builder import SikuwaBuilder, build_project, clean_project
+from sikuwa.builder import SikuwaBuilder, build_project, clean_project, sync_project
 from sikuwa.log import get_logger, LogLevel
+from sikuwa.i18n import _
 
 
 # 全局日志器
@@ -18,7 +19,7 @@ logger = get_logger("sikuwa.cli")
 
 
 @click.group()
-@click.version_option(version="0.1.0", prog_name="sikuwa")
+@click.version_option(version="1.2.0", prog_name="sikuwa")
 def cli():
     """
     Sikuwa - Python 项目打包工具
@@ -42,12 +43,12 @@ def cli():
 @click.option(
     '-v', '--verbose',
     is_flag=True,
-    help='详细输出模式'
+    help=_('详细输出模式')
 )
 @click.option(
     '-f', '--force',
     is_flag=True,
-    help='强制重新构建'
+    help=_('强制重新构建')
 )
 def build(config: Optional[str], platform: Optional[str], verbose: bool, force: bool):
     """
@@ -110,7 +111,7 @@ def build(config: Optional[str], platform: Optional[str], verbose: bool, force: 
 @click.option(
     '-v', '--verbose',
     is_flag=True,
-    help='详细输出模式'
+    help=_('详细输出模式')
 )
 def clean(config: Optional[str], verbose: bool):
     """
@@ -164,7 +165,7 @@ def clean(config: Optional[str], verbose: bool):
 @click.option(
     '--force',
     is_flag=True,
-    help='覆盖已存在的配置文件'
+    help=_('覆盖已存在的文件')
 )
 def init(output: str, force: bool):
     """
@@ -279,11 +280,11 @@ def version():
     """
     显示版本信息
     """
-    click.echo("\nSikuwa v0.1.0")
+    click.echo("\nSikuwa v1.2.0")
     click.echo("Python 项目打包工具")
     click.echo("基于 Nuitka 的跨平台构建系统")
-    click.echo("\nGitHub: https://github.com/yourusername/sikuwa")
-    click.echo("文档: https://sikuwa.readthedocs.io\n")
+    click.echo("\nGitHub: https://github.com/FORGE24/Sikuwa/")
+    click.echo("文档: https://www.sanrol-cloud.top\n")
 
 
 @cli.command()
@@ -472,7 +473,7 @@ def doctor():
     # 检查可选包
     click.echo("\n[6] 可选依赖包")
     optional_packages = {
-        'ordered_set': '有序集合支持',
+        'ordered_set': _('有序集合支持'),
         'zstandard': 'Zstandard 压缩',
     }
     
@@ -485,7 +486,7 @@ def doctor():
     
     # 总结
     click.echo("\n" + "=" * 70)
-    click.echo("诊断完成")
+    click.echo(_("诊断完成"))
     click.echo("=" * 70)
     click.echo("\n如果有 [FAIL] 项，请先解决这些问题后再进行构建。\n")
 
@@ -514,6 +515,7 @@ def help_cmd(query: Optional[str]):
         click.echo("  sikuwa init                 创建配置文件")
         click.echo("  sikuwa build                构建项目")
         click.echo("  sikuwa clean                清理构建文件")
+        click.echo("  sikuwa sync                 同步项目依赖")
         click.echo("  sikuwa info                 显示项目信息")
         click.echo("  sikuwa doctor               检查构建环境")
         
@@ -525,9 +527,10 @@ def help_cmd(query: Optional[str]):
         click.echo("\n快速开始:")
         click.echo("  1. sikuwa init              # 创建配置文件")
         click.echo("  2. 编辑 sikuwa.toml         # 配置项目")
-        click.echo("  3. sikuwa build             # 构建项目")
+        click.echo("  3. sikuwa sync              # 同步项目依赖")
+        click.echo("  4. sikuwa build             # 构建项目")
         
-        click.echo("\n文档: https://sikuwa.readthedocs.io")
+        click.echo("\n文档: https://www.sanrol-cloud.top")
         click.echo("=" * 70 + "\n")
         
     elif query.lower() == "config":
@@ -577,7 +580,7 @@ windows_product_name = "My Product"
         click.echo("  onefile            单文件模式")
         click.echo("  include_packages   包含的 Python 包")
         
-        click.echo("\n详细文档: https://sikuwa.readthedocs.io/config")
+        click.echo("\n详细文档: https://www.sanrol-cloud.top")
         click.echo("=" * 70 + "\n")
         
     else:
@@ -629,7 +632,7 @@ def show_config(config: Optional[str], format: str):
             config_dict = build_config.to_dict()
             
             click.echo("\n" + "=" * 70)
-            click.echo("完整配置")
+            click.echo(_("完整配置"))
             click.echo("=" * 70)
             
             def print_dict(d, indent=0):
@@ -654,6 +657,130 @@ def show_config(config: Optional[str], format: str):
         sys.exit(1)
     except Exception as e:
         click.echo(f"[FAIL] 读取配置失败: {e}", err=True)
+        sys.exit(1)
+
+
+@cli.command()
+@click.option(
+    '-c', '--config',
+    type=click.Path(exists=True),
+    help='配置文件路径 (默认: sikuwa.toml)'
+)
+@click.option(
+    '-v', '--verbose',
+    is_flag=True,
+    help=_('详细输出模式')
+)
+def sync(config: Optional[str], verbose: bool):
+    """
+    同步项目依赖
+    
+    自动创建或进入虚拟环境，并安装配置文件中指定的依赖包
+    
+    示例:
+    
+        sikuwa sync                    # 同步依赖
+        
+        sikuwa sync -v                 # 详细输出
+        
+        sikuwa sync -c my_config.toml  # 使用指定配置文件
+    """
+    try:
+        from sikuwa.builder import sync_project
+        
+        # 加载配置
+        logger.info_operation("加载构建配置...")
+        build_config = ConfigManager.load_config(config)
+        
+        # 验证配置
+        logger.info_operation("验证配置...")
+        build_config.validate()
+        
+        # 执行同步
+        logger.info_operation(f"开始同步项目依赖: {build_config.project_name}")
+        
+        success = sync_project(
+            config=build_config,
+            verbose=verbose
+        )
+        
+        if success:
+            click.echo("\n[OK] 依赖同步成功完成!", err=False)
+            sys.exit(0)
+        else:
+            click.echo("\n[FAIL] 依赖同步失败!", err=True)
+            sys.exit(1)
+            
+    except FileNotFoundError as e:
+        click.echo(f"[FAIL] {e}", err=True)
+        click.echo("\n提示: 使用 'sikuwa init' 创建配置文件", err=True)
+        sys.exit(1)
+    except Exception as e:
+        click.echo(f"[FAIL] 同步失败: {e}", err=True)
+        if verbose:
+            import traceback
+            click.echo(traceback.format_exc(), err=True)
+        sys.exit(1)
+
+
+@cli.command()
+@click.option(
+    '-c', '--config',
+    type=click.Path(exists=True),
+    help='配置文件路径 (默认: sikuwa.toml)'
+)
+@click.option(
+    '-v', '--verbose',
+    is_flag=True,
+    help='详细输出模式'
+)
+def build_sequence(config: Optional[str], verbose: bool):
+    """
+    执行编译序列构建
+    
+    支持按配置文件中定义的项目依赖关系进行拓扑排序，并可选择并行构建
+    
+    示例:
+        
+        sikuwa build-sequence                    # 执行编译序列构建
+        
+        sikuwa build-sequence -v                 # 详细输出
+        
+        sikuwa build-sequence -c my_config.toml  # 使用指定配置文件
+    """
+    try:
+        from sikuwa.builder import build_sequence
+        
+        # 加载配置
+        logger.info_operation("加载构建配置...")
+        build_config = ConfigManager.load_config(config)
+        
+        # 验证配置
+        logger.info_operation("验证配置...")
+        build_config.validate()
+        
+        # 执行编译序列构建
+        success = build_sequence(
+            config=build_config,
+            verbose=verbose
+        )
+        
+        if success:
+            click.echo("\n[OK] 编译序列构建成功完成!", err=False)
+            sys.exit(0)
+        else:
+            click.echo("\n[FAIL] 编译序列构建失败!", err=True)
+            sys.exit(1)
+            
+    except FileNotFoundError as e:
+        click.echo(f"[FAIL] {e}", err=True)
+        click.echo("\n提示: 使用 'sikuwa init' 创建配置文件", err=True)
+        sys.exit(1)
+    except Exception as e:
+        click.echo(f"[FAIL] 构建失败: {e}", err=True)
+        if verbose:
+            import traceback
+            click.echo(traceback.format_exc(), err=True)
         sys.exit(1)
 
 

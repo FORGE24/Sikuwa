@@ -13,7 +13,7 @@ Sikuwa 是一款基于 Nuitka 的 Python 项目打包工具，专注于提供简
 
 ## 更新说明
 
-### v0.1.0 主要特性
+### v1.2.0 主要特性
 1. **基础功能实现**
    - 完整的项目初始化与配置管理
    - 多平台编译支持（Windows/Linux/macOS）
@@ -134,8 +134,8 @@ pip install -e .
 
 #### 1. 基础构建流程
 ```python
-fromikuwa.config import ConfigManager
-fromikuwa.builder import SikuwaBuilder
+from sikuwa.config import ConfigManager
+from sikuwa.builder import SikuwaBuilder
 
 # 加载配置
 config = ConfigManager.load_config("sikuwa.toml")
@@ -152,8 +152,8 @@ builder.build(platform="windows")
 
 #### 2. 自定义配置
 ```python
-fromikuwa.config import BuildConfig, NuitkaOptions
-fromikuwa.builder import SikuwaBuilder
+from sikuwa.config import BuildConfig, NuitkaOptions
+from sikuwa.builder import SikuwaBuilder
 
 # 创建自定义配置
 nuitka_options = NuitkaOptions(
@@ -179,8 +179,8 @@ builder.build(force=True)
 
 #### 3. 清理构建文件
 ```python
-fromikuwa.config import ConfigManager
-fromikuwa.builder import SikuwaBuilder
+from sikuwa.config import ConfigManager
+from sikuwa.builder import SikuwaBuilder
 
 config = ConfigManager.load_config()
 builder = SikuwaBuilder(config)
@@ -189,8 +189,8 @@ builder.clean()  # 清理输出目录和构建目录
 
 #### 4. 生成构建清单
 ```python
-fromikuwa.config import ConfigManager
-fromikuwa.builder import SikuwaBuilder
+from sikuwa.config import ConfigManager
+from sikuwa.builder import SikuwaBuilder
 
 config = ConfigManager.load_config()
 builder = SikuwaBuilder(config)
@@ -284,8 +284,8 @@ builder._generate_manifest()  # 生成构建清单文件
    [sikuwa]
    project_name = "sikuwa"
    main_script = "sikuwa/__main__.py"
-   version = "0.1.0"
-   platforms = ["windows", "linux", "macos"]
+   version = "1.2.0"
+   platforms = ["windows"]
    
    [sikuwa.nuitka]
    standalone = true

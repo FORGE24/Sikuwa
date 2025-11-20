@@ -13,6 +13,8 @@ from typing import Optional, Any, Callable
 from datetime import datetime
 from enum import IntEnum
 
+from sikuwa.i18n import _
+
 
 class LogLevel(IntEnum):
     """34 级日志等级"""
@@ -458,16 +460,16 @@ if __name__ == '__main__':
     logger = get_logger("test", level=LogLevel.TRACE_IO)
     
     # 测试所有级别
-    logger.trace_io("这是 TRACE_IO 级别日志")
-    logger.trace_state("这是 TRACE_STATE 级别日志")
-    logger.trace_perf("这是 TRACE_PERF 级别日志")
-    logger.trace_flow("这是 TRACE_FLOW 级别日志")
-    logger.debug_detail("这是 DEBUG_DETAIL 级别日志")
-    logger.debug_config("这是 DEBUG_CONFIG 级别日志")
-    logger.info_operation("这是 INFO_OPERATION 级别日志")
-    logger.warn_minor("这是 WARN_MINOR 级别日志")
-    logger.error_minimal("这是 ERROR_MINIMAL 级别日志")
-    logger.critical_service("这是 CRITICAL_SERVICE 级别日志")
+    logger.trace_io(_("这是 TRACE_IO 级别日志"))
+    logger.trace_state(_("这是 TRACE_STATE 级别日志"))
+    logger.trace_perf(_("这是 TRACE_PERF 级别日志"))
+    logger.trace_flow(_("这是 TRACE_FLOW 级别日志"))
+    logger.debug_detail(_("这是 DEBUG_DETAIL 级别日志"))
+    logger.debug_config(_("这是 DEBUG_CONFIG 级别日志"))
+    logger.info_operation(_("这是 INFO_OPERATION 级别日志"))
+    logger.warn_minor(_("这是 WARN_MINOR 级别日志"))
+    logger.error_minimal(_("这是 ERROR_MINIMAL 级别日志"))
+    logger.critical_service(_("这是 CRITICAL_SERVICE 级别日志"))
     
     # 测试装饰器
     @logger.trace_function
@@ -478,8 +480,8 @@ if __name__ == '__main__':
     result = test_function(1, 2)
     
     # 测试性能计时
-    with PerfTimer("测试计时块", logger):
+    with PerfTimer(_("测试计时块"), logger):
         time.sleep(0.05)
-        print("执行中...")
+        print(_("执行中..."))
     
-    print("\n所有测试完成！")
+    print(f"\n{_("所有测试完成！")}")

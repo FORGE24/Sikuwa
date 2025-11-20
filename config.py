@@ -67,7 +67,15 @@ class NuitkaOptions:
     
     def to_dict(self) -> Dict[str, Any]:
         """转换为字典"""
-        return asdict(self)
+        data = asdict(self)
+        
+        # 过滤掉值为 None 的字段，避免 TOML 序列化错误
+        filtered_data = {}
+        for key, value in data.items():
+            if value is not None:
+                filtered_data[key] = value
+        
+        return filtered_data
     
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'NuitkaOptions':
@@ -110,6 +118,13 @@ class BuildConfig:
     # 依赖管理
     requirements_file: Optional[str] = None
     pip_index_url: Optional[str] = None
+    dependencies: List[str] = field(default_factory=list)
+
+    # 编译序列配置
+    build_sequence: Optional[List[Dict[str, Any]]] = None
+    sequence_dependencies: Optional[Dict[str, List[str]]] = None
+    parallel_build: bool = False
+    max_workers: int = 4
     
     # 钩子脚本
     pre_build_script: Optional[str] = None
@@ -120,24 +135,33 @@ class BuildConfig:
         if not self.project_name:
             raise ValueError("project_name 不能为空")
         
-        if not self.main_script:
-            raise ValueError("main_script 不能为空")
-        
-        valid_platforms = ["windows", "linux", "macos"]
-        for platform in self.platforms:
-            if platform not in valid_platforms:
-                raise ValueError(f"不支持的平台: {platform}，有效平台: {valid_platforms}")
-        
-        # 检查主脚本是否存在
-        main_file = Path(self.src_dir) / self.main_script
-        if not main_file.exists():
-            raise FileNotFoundError(f"主脚本不存在: {main_file}")
+        # 如果是编译序列配置，跳过main_script验证
+        if not self.build_sequence:
+            if not self.main_script:
+                raise ValueError("main_script 不能为空")
+            
+            valid_platforms = ["windows", "linux", "macos"]
+            for platform in self.platforms:
+                if platform not in valid_platforms:
+                    raise ValueError(f"不支持的平台: {platform}，有效平台: {valid_platforms}")
+            
+            # 检查主脚本是否存在
+            main_file = Path(self.src_dir) / self.main_script
+            if not main_file.exists():
+                raise FileNotFoundError(f"主脚本不存在: {main_file}")
     
     def to_dict(self) -> Dict[str, Any]:
         """转换为字典"""
         data = asdict(self)
         data['nuitka_options'] = self.nuitka_options.to_dict()
-        return data
+        
+        # 过滤掉值为 None 的字段，避免 TOML 序列化错误
+        filtered_data = {}
+        for key, value in data.items():
+            if value is not None:
+                filtered_data[key] = value
+        
+        return filtered_data
     
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'BuildConfig':
@@ -283,7 +307,8 @@ class ConfigManager:
                     "matplotlib"
                 ]
             ),
-            resources=[]
+            resources=[],
+            dependencies=["requests>=2.0.0", "click>=8.0.0"]
         )
         
         try:

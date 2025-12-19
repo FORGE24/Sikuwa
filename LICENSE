@@ -1,0 +1,770 @@
+                GNU Free Documentation License
+                 Version 1.3, 3 November 2008
+
+
+ Copyright (C) 2000, 2001, 2002, 2007, 2008 Free Software Foundation, Inc.
+     <http://fsf.org/>
+ Everyone is permitted to copy and distribute verbatim copies
+ of this license document, but changing it is not allowed.
+
+0. PREAMBLE
+
+The purpose of this License is to make a manual, textbook, or other
+functional and useful document "free" in the sense of freedom: to
+assure everyone the effective freedom to copy and redistribute it,
+with or without modifying it, either commercially or noncommercially.
+Secondarily, this License preserves for the author and publisher a way
+to get credit for their work, while not being considered responsible
+for modifications made by others.
+
+This License is a kind of "copyleft", which means that derivative
+works of the document must themselves be free in the same sense.  It
+complements the GNU General Public License, which is a copyleft
+license designed for free software.
+
+We have designed this License in order to use it for manuals for free
+software, because free software needs free documentation: a free
+program should come with manuals providing the same freedoms that the
+software does.  But this License is not limited to software manuals;
+it can be used for any textual work, regardless of subject matter or
+whether it is published as a printed book.  We recommend this License
+principally for works whose purpose is instruction or reference.
+
+
+1. APPLICABILITY AND DEFINITIONS
+
+This License applies to any manual or other work, in any medium, that
+contains a notice placed by the copyright holder saying it can be
+distributed under the terms of this License.  Such a notice grants a
+world-wide, royalty-free license, unlimited in duration, to use that
+work under the conditions stated herein.  The "Document", below,
+refers to any such manual or work.  Any member of the public is a
+licensee, and is addressed as "you".  You accept the license if you
+copy, modify or distribute the work in a way requiring permission
+under copyright law.
+
+A "Modified Version" of the Document means any work containing the
+Document or a portion of it, either copied verbatim, or with
+modifications and/or translated into another language.
+
+A "Secondary Section" is a named appendix or a front-matter section of
+the Document that deals exclusively with the relationship of the
+publishers or authors of the Document to the Document's overall
+subject (or to related matters) and contains nothing that could fall
+directly within that overall subject.  (Thus, if the Document is in
+part a textbook of mathematics, a Secondary Section may not explain
+any mathematics.)  The relationship could be a matter of historical
+connection with the subject or with related matters, or of legal,
+commercial, philosophical, ethical or political position regarding
+them.
+
+The "Invariant Sections" are certain Secondary Sections whose titles
+are designated, as being those of Invariant Sections, in the notice
+that says that the Document is released under this License.  If a
+section does not fit the above definition of Secondary then it is not
+allowed to be designated as Invariant.  The Document may contain zero
+Invariant Sections.  If the Document does not identify any Invariant
+Sections then there are none.
+
+The "Cover Texts" are certain short passages of text that are listed,
+as Front-Cover Texts or Back-Cover Texts, in the notice that says that
+the Document is released under this License.  A Front-Cover Text may
+be at most 5 words, and a Back-Cover Text may be at most 25 words.
+
+A "Transparent" copy of the Document means a machine-readable copy,
+represented in a format whose specification is available to the
+general public, that is suitable for revising the document
+straightforwardly with generic text editors or (for images composed of
+pixels) generic paint programs or (for drawings) some widely available
+drawing editor, and that is suitable for input to text formatters or
+for automatic translation to a variety of formats suitable for input
+to text formatters.  A copy made in an otherwise Transparent file
+format whose markup, or absence of markup, has been arranged to thwart
+or discourage subsequent modification by readers is not Transparent.
+An image format is not Transparent if used for any substantial amount
+of text.  A copy that is not "Transparent" is called "Opaque".
+
+Examples of suitable formats for Transparent copies include plain
+ASCII without markup, Texinfo input format, LaTeX input format, SGML
+or XML using a publicly available DTD, and standard-conforming simple
+HTML, PostScript or PDF designed for human modification.  Examples of
+transparent image formats include PNG, XCF and JPG.  Opaque formats
+include proprietary formats that can be read and edited only by
+proprietary word processors, SGML or XML for which the DTD and/or
+processing tools are not generally available, and the
+machine-generated HTML, PostScript or PDF produced by some word
+processors for output purposes only.
+
+The "Title Page" means, for a printed book, the title page itself,
+plus such following pages as are needed to hold, legibly, the material
+this License requires to appear in the title page.  For works in
+formats which do not have any title page as such, "Title Page" means
+the text near the most prominent appearance of the work's title,
+preceding the beginning of the body of the text.
+
+The "publisher" means any person or entity that distributes copies of
+the Document to the public.
+
+A section "Entitled XYZ" means a named subunit of the Document whose
+title either is precisely XYZ or contains XYZ in parentheses following
+text that translates XYZ in another language.  (Here XYZ stands for a
+specific section name mentioned below, such as "Acknowledgements",
+"Dedications", "Endorsements", or "History".)  To "Preserve the Title"
+of such a section when you modify the Document means that it remains a
+section "Entitled XYZ" according to this definition.
+
+The Document may include Warranty Disclaimers next to the notice which
+states that this License applies to the Document.  These Warranty
+Disclaimers are considered to be included by reference in this
+License, but only as regards disclaiming warranties: any other
+implication that these Warranty Disclaimers may have is void and has
+no effect on the meaning of this License.
+
+2. VERBATIM COPYING
+
+You may copy and distribute the Document in any medium, either
+commercially or noncommercially, provided that this License, the
+copyright notices, and the license notice saying this License applies
+to the Document are reproduced in all copies, and that you add no
+other conditions whatsoever to those of this License.  You may not use
+technical measures to obstruct or control the reading or further
+copying of the copies you make or distribute.  However, you may accept
+compensation in exchange for copies.  If you distribute a large enough
+number of copies you must also follow the conditions in section 3.
+
+You may also lend copies, under the same conditions stated above, and
+you may publicly display copies.
+
+
+3. COPYING IN QUANTITY
+
+If you publish printed copies (or copies in media that commonly have
+printed covers) of the Document, numbering more than 100, and the
+Document's license notice requires Cover Texts, you must enclose the
+copies in covers that carry, clearly and legibly, all these Cover
+Texts: Front-Cover Texts on the front cover, and Back-Cover Texts on
+the back cover.  Both covers must also clearly and legibly identify
+you as the publisher of these copies.  The front cover must present
+the full title with all words of the title equally prominent and
+visible.  You may add other material on the covers in addition.
+Copying with changes limited to the covers, as long as they preserve
+the title of the Document and satisfy these conditions, can be treated
+as verbatim copying in other respects.
+
+If the required texts for either cover are too voluminous to fit
+legibly, you should put the first ones listed (as many as fit
+reasonably) on the actual cover, and continue the rest onto adjacent
+pages.
+
+If you publish or distribute Opaque copies of the Document numbering
+more than 100, you must either include a machine-readable Transparent
+copy along with each Opaque copy, or state in or with each Opaque copy
+a computer-network location from which the general network-using
+public has access to download using public-standard network protocols
+a complete Transparent copy of the Document, free of added material.
+If you use the latter option, you must take reasonably prudent steps,
+when you begin distribution of Opaque copies in quantity, to ensure
+that this Transparent copy will remain thus accessible at the stated
+location until at least one year after the last time you distribute an
+Opaque copy (directly or through your agents or retailers) of that
+edition to the public.
+
+It is requested, but not required, that you contact the authors of the
+Document well before redistributing any large number of copies, to
+give them a chance to provide you with an updated version of the
+Document.
+
+
+4. MODIFICATIONS
+
+You may copy and distribute a Modified Version of the Document under
+the conditions of sections 2 and 3 above, provided that you release
+the Modified Version under precisely this License, with the Modified
+Version filling the role of the Document, thus licensing distribution
+and modification of the Modified Version to whoever possesses a copy
+of it.  In addition, you must do these things in the Modified Version:
+
+A. Use in the Title Page (and on the covers, if any) a title distinct
+   from that of the Document, and from those of previous versions
+   (which should, if there were any, be listed in the History section
+   of the Document).  You may use the same title as a previous version
+   if the original publisher of that version gives permission.
+B. List on the Title Page, as authors, one or more persons or entities
+   responsible for authorship of the modifications in the Modified
+   Version, together with at least five of the principal authors of the
+   Document (all of its principal authors, if it has fewer than five),
+   unless they release you from this requirement.
+C. State on the Title page the name of the publisher of the
+   Modified Version, as the publisher.
+D. Preserve all the copyright notices of the Document.
+E. Add an appropriate copyright notice for your modifications
+   adjacent to the other copyright notices.
+F. Include, immediately after the copyright notices, a license notice
+   giving the public permission to use the Modified Version under the
+   terms of this License, in the form shown in the Addendum below.
+G. Preserve in that license notice the full lists of Invariant Sections
+   and required Cover Texts given in the Document's license notice.
+H. Include an unaltered copy of this License.
+I. Preserve the section Entitled "History", Preserve its Title, and add
+   to it an item stating at least the title, year, new authors, and
+   publisher of the Modified Version as given on the Title Page.  If
+   there is no section Entitled "History" in the Document, create one
+   stating the title, year, authors, and publisher of the Document as
+   given on its Title Page, then add an item describing the Modified
+   Version as stated in the previous sentence.
+J. Preserve the network location, if any, given in the Document for
+   public access to a Transparent copy of the Document, and likewise
+   the network locations given in the Document for previous versions
+   it was based on.  These may be placed in the "History" section.
+   You may omit a network location for a work that was published at
+   least four years before the Document itself, or if the original
+   publisher of the version it refers to gives permission.
+K. For any section Entitled "Acknowledgements" or "Dedications",
+   Preserve the Title of the section, and preserve in the section all
+   the substance and tone of each of the contributor acknowledgements
+   and/or dedications given therein.
+L. Preserve all the Invariant Sections of the Document,
+   unaltered in their text and in their titles.  Section numbers
+   or the equivalent are not considered part of the section titles.
+M. Delete any section Entitled "Endorsements".  Such a section
+   may not be included in the Modified Version.
+N. Do not retitle any existing section to be Entitled "Endorsements"
+   or to conflict in title with any Invariant Section.
+O. Preserve any Warranty Disclaimers.
+
+If the Modified Version includes new front-matter sections or
+appendices that qualify as Secondary Sections and contain no material
+copied from the Document, you may at your option designate some or all
+of these sections as invariant.  To do this, add their titles to the
+list of Invariant Sections in the Modified Version's license notice.
+These titles must be distinct from any other section titles.
+
+You may add a section Entitled "Endorsements", provided it contains
+nothing but endorsements of your Modified Version by various
+parties--for example, statements of peer review or that the text has
+been approved by an organization as the authoritative definition of a
+standard.
+
+You may add a passage of up to five words as a Front-Cover Text, and a
+passage of up to 25 words as a Back-Cover Text, to the end of the list
+of Cover Texts in the Modified Version.  Only one passage of
+Front-Cover Text and one of Back-Cover Text may be added by (or
+through arrangements made by) any one entity.  If the Document already
+includes a cover text for the same cover, previously added by you or
+by arrangement made by the same entity you are acting on behalf of,
+you may not add another; but you may replace the old one, on explicit
+permission from the previous publisher that added the old one.
+
+The author(s) and publisher(s) of the Document do not by this License
+give permission to use their names for publicity for or to assert or
+imply endorsement of any Modified Version.
+
+
+5. COMBINING DOCUMENTS
+
+You may combine the Document with other documents released under this
+License, under the terms defined in section 4 above for modified
+versions, provided that you include in the combination all of the
+Invariant Sections of all of the original documents, unmodified, and
+list them all as Invariant Sections of your combined work in its
+license notice, and that you preserve all their Warranty Disclaimers.
+
+The combined work need only contain one copy of this License, and
+multiple identical Invariant Sections may be replaced with a single
+copy.  If there are multiple Invariant Sections with the same name but
+different contents, make the title of each such section unique by
+adding at the end of it, in parentheses, the name of the original
+author or publisher of that section if known, or else a unique number.
+Make the same adjustment to the section titles in the list of
+Invariant Sections in the license notice of the combined work.
+
+In the combination, you must combine any sections Entitled "History"
+in the various original documents, forming one section Entitled
+"History"; likewise combine any sections Entitled "Acknowledgements",
+and any sections Entitled "Dedications".  You must delete all sections
+Entitled "Endorsements".
+
+
+6. COLLECTIONS OF DOCUMENTS
+
+You may make a collection consisting of the Document and other
+documents released under this License, and replace the individual
+copies of this License in the various documents with a single copy
+that is included in the collection, provided that you follow the rules
+of this License for verbatim copying of each of the documents in all
+other respects.
+
+You may extract a single document from such a collection, and
+distribute it individually under this License, provided you insert a
+copy of this License into the extracted document, and follow this
+License in all other respects regarding verbatim copying of that
+document.
+
+
+7. AGGREGATION WITH INDEPENDENT WORKS
+
+A compilation of the Document or its derivatives with other separate
+and independent documents or works, in or on a volume of a storage or
+distribution medium, is called an "aggregate" if the copyright
+resulting from the compilation is not used to limit the legal rights
+of the compilation's users beyond what the individual works permit.
+When the Document is included in an aggregate, this License does not
+apply to the other works in the aggregate which are not themselves
+derivative works of the Document.
+
+If the Cover Text requirement of section 3 is applicable to these
+copies of the Document, then if the Document is less than one half of
+the entire aggregate, the Document's Cover Texts may be placed on
+covers that bracket the Document within the aggregate, or the
+electronic equivalent of covers if the Document is in electronic form.
+Otherwise they must appear on printed covers that bracket the whole
+aggregate.
+
+
+8. TRANSLATION
+
+Translation is considered a kind of modification, so you may
+distribute translations of the Document under the terms of section 4.
+Replacing Invariant Sections with translations requires special
+permission from their copyright holders, but you may include
+translations of some or all Invariant Sections in addition to the
+original versions of these Invariant Sections.  You may include a
+translation of this License, and all the license notices in the
+Document, and any Warranty Disclaimers, provided that you also include
+the original English version of this License and the original versions
+of those notices and disclaimers.  In case of a disagreement between
+the translation and the original version of this License or a notice
+or disclaimer, the original version will prevail.
+
+If a section in the Document is Entitled "Acknowledgements",
+"Dedications", or "History", the requirement (section 4) to Preserve
+its Title (section 1) will typically require changing the actual
+title.
+
+
+9. TERMINATION
+
+You may not copy, modify, sublicense, or distribute the Document
+except as expressly provided under this License.  Any attempt
+otherwise to copy, modify, sublicense, or distribute it is void, and
+will automatically terminate your rights under this License.
+
+However, if you cease all violation of this License, then your license
+from a particular copyright holder is reinstated (a) provisionally,
+unless and until the copyright holder explicitly and finally
+terminates your license, and (b) permanently, if the copyright holder
+fails to notify you of the violation by some reasonable means prior to
+60 days after the cessation.
+
+Moreover, your license from a particular copyright holder is
+reinstated permanently if the copyright holder notifies you of the
+violation by some reasonable means, this is the first time you have
+received notice of violation of this License (for any work) from that
+copyright holder, and you cure the violation prior to 30 days after
+your receipt of the notice.
+
+Termination of your rights under this section does not terminate the
+licenses of parties who have received copies or rights from you under
+this License.  If your rights have been terminated and not permanently
+reinstated, receipt of a copy of some or all of the same material does
+not give you any rights to use it.
+
+
+10. FUTURE REVISIONS OF THIS LICENSE
+
+The Free Software Foundation may publish new, revised versions of the
+GNU Free Documentation License from time to time.  Such new versions
+will be similar in spirit to the present version, but may differ in
+detail to address new problems or concerns.  See
+http://www.gnu.org/copyleft/.
+
+Each version of the License is given a distinguishing version number.
+If the Document specifies that a particular numbered version of this
+License "or any later version" applies to it, you have the option of
+following the terms and conditions either of that specified version or
+of any later version that has been published (not as a draft) by the
+Free Software Foundation.  If the Document does not specify a version
+number of this License, you may choose any version ever published (not
+as a draft) by the Free Software Foundation.  If the Document
+specifies that a proxy can decide which future versions of this
+License can be used, that proxy's public statement of acceptance of a
+version permanently authorizes you to choose that version for the
+Document.
+
+11. RELICENSING
+
+"Massive Multiauthor Collaboration Site" (or "MMC Site") means any
+World Wide Web server that publishes copyrightable works and also
+provides prominent facilities for anybody to edit those works.  A
+public wiki that anybody can edit is an example of such a server.  A
+"Massive Multiauthor Collaboration" (or "MMC") contained in the site
+means any set of copyrightable works thus published on the MMC site.
+
+"CC-BY-SA" means the Creative Commons Attribution-Share Alike 3.0 
+license published by Creative Commons Corporation, a not-for-profit 
+corporation with a principal place of business in San Francisco, 
+California, as well as future copyleft versions of that license 
+published by that same organization.
+
+"Incorporate" means to publish or republish a Document, in whole or in 
+part, as part of another Document.
+
+An MMC is "eligible for relicensing" if it is licensed under this 
+License, and if all works that were first published under this License 
+somewhere other than this MMC, and subsequently incorporated in whole or 
+in part into the MMC, (1) had no cover texts or invariant sections, and 
+(2) were thus incorporated prior to November 1, 2008.
+
+The operator of an MMC Site may republish an MMC contained in the site
+under CC-BY-SA on the same site at any time before August 1, 2009,
+provided the MMC is eligible for relicensing.
+
+
+ADDENDUM: How to use this License for your documents
+
+To use this License in a document you have written, include a copy of
+the License in the document and put the following copyright and
+license notices just after the title page:
+
+    Copyright (c)  YEAR  YOUR NAME.
+    Permission is granted to copy, distribute and/or modify this document
+    under the terms of the GNU Free Documentation License, Version 1.3
+    or any later version published by the Free Software Foundation;
+    with no Invariant Sections, no Front-Cover Texts, and no Back-Cover Texts.
+    A copy of the license is included in the section entitled "GNU
+    Free Documentation License".
+
+If you have Invariant Sections, Front-Cover Texts and Back-Cover Texts,
+replace the "with...Texts." line with this:
+
+    with the Invariant Sections being LIST THEIR TITLES, with the
+    Front-Cover Texts being LIST, and with the Back-Cover Texts being LIST.
+
+If you have Invariant Sections without Cover Texts, or some other
+combination of the three, merge those two alternatives to suit the
+situation.
+
+If your document contains nontrivial examples of program code, we
+recommend releasing these examples in parallel under your choice of
+free software license, such as the GNU General Public License,
+to permit their use in free software.
+
+
+GNU 自由文档许可证
+版本 1.3，2008 年 11 月 3 日
+版权所有 (C) 2000、2001、2002、2007、2008 自由软件基金会
+< http://fsf.org/ >
+任何人都可以复制和分发原样副本。
+本许可文件的内容，但不得更改。0. 前言本许可的目的是制作手册、教科书或其他
+功能齐全且实用的文件，“自由”在此意义上是免费的：
+确保每个人都享有有效复制和重新分发的自由。
+无论是否进行修改，无论是用于商业用途还是非商业用途。
+其次，本许可为作者和出版商保留了一种方式
+为了获得工作认可，却不被认为负有责任。
+对于他人所做的修改，本许可属于“版权共享”许可。这意味着衍生作品
+该文档的作品本身也必须是同样意义上的自由作品。
+它与 GNU 通用公共许可证（一种版权共享许可证）相辅相成。
+专为自由软件设计的许可协议。我们设计此许可协议的目的是为了将其用于免费手册。
+软件，因为自由软件需要自由文档：一份自由的文档
+程序应该附带手册，提供与以下情况相同的自由：
+软件确实如此。但本许可不仅限于软件手册；
+它可以用于任何文本作品，无论其主题是什么。
+无论是否以印刷书籍的形式出版，我们都推荐此许可协议。
+主要用于教学或参考类作品。
+1. 适用范围和定义 本许可适用于任何媒介上的任何手册或其他作品，
+包含版权所有者发布的声明，称其可以……
+根据本许可条款分发。此类通知授予
+全球范围内的、免版税的、无限期的许可，允许使用该内容
+按照本文所述条件工作。下文所指的“文件”
+指任何此类手册或作品。任何公众成员都是……
+被许可人，并被称为“您”。如果您符合以下条件，则表示您接受本许可：
+未经许可，不得以任何方式复制、修改或分发作品。
+根据版权法，“文档的修改版本”是指包含以下内容的任何作品：
+文件或其一部分，无论是逐字复制还是与……一起复制
+修改和/或翻译成其他语言。“辅助章节”是指已命名的附录或前言部分。
+专门处理以下关系的文档
+文件的出版商或作者对文件的整体影响
+主题（或相关事项），且不包含任何可能落入该主题的内容。
+直接属于该总体主题。（因此，如果文档位于
+数学教科书的一部分，中学部分可能无法解释
+（任何数学。）这种关系可能与历史有关。
+与主题或相关事项，或法律方面的联系，
+关于商业、哲学、伦理或政治立场
+它们。“不变章节”是指某些次要章节，它们的标题
+在通知中被指定为不变截面。
+这表明该文档是根据此许可证发布的。如果
+如果该部分不符合上述“次要”的定义，则它不是“次要”部分。
+允许指定为不变式。文档可以包含零个元素。
+不变章节。如果文档未标识任何不变章节
+如果本书没有章节，则“封面文字”指的是列出的某些简短文本段落。
+作为封面文字或封底文字，在声明中指出：
+本文档根据此许可发布。封面文字可能
+正文最多5个字，封底文字最多25个字。“透明”文档副本是指机器可读副本。
+以一种格式表示，其规范可供查阅。
+普通公众，适合对文件进行修订。
+直接使用通用文本编辑器或（对于由以下部分组成的图像）
+像素）通用绘图程序或（用于绘图）一些广泛使用的
+绘图编辑器，适用于作为文本格式化程序的输入或
+用于自动翻译成各种适合输入的格式
+对文本格式化程序而言，这是在透明文件中创建的副本。
+其标记（或缺少标记）经过精心设计，旨在阻止……
+或阻止读者进行后续修改是不透明的。
+如果图像格式用于大量用途，则该图像格式不透明。
+文本。非“透明”的副本称为“不透明”。适合透明副本的格式示例包括纯文本。
+无标记 ASCII 编码、Texinfo 输入格式、LaTeX 输入格式、SGML
+或者使用公开可用的 DTD 的 XML，以及符合标准的简单
+专为人类编辑而设计的 HTML、PostScript 或 PDF 文件示例。
+透明图像格式包括 PNG、XCF 和 JPG。不透明格式
+包括只有特定人员才能读取和编辑的专有格式
+专有文字处理器、SGML 或 XML，其 DTD 和/或
+加工工具通常不可用，而且
+机器生成的 HTML、PostScript 或 PDF 文件是由某些文字处理软件生成的
+仅用于输出目的的处理器。“标题页”是指印刷书籍的标题页本身。
+以及后续所需的页面，以便清晰地记录这些材料。
+本许可要求出现在标题页上。对于作品
+没有标题页的格式，“标题页”指的是
+作品标题最显著出现位置附近的文字，
+在正文开始之前。“出版商”是指分发以下书籍或出版物的任何个人或实体：
+向公众发布该文件。标题为“XYZ”的部分是指该文件的一个命名子单元，其
+标题要么正好是 XYZ，要么在括号内包含 XYZ。
+将 XYZ 翻译成另一种语言的文本。（这里 XYZ 代表……）
+下面提到的具体章节名称，例如“致谢”
+“献词”、“推荐语”或“历史介绍”。）以“保留标题”
+当您修改文档时，此类部分的保留意味着它仍然是一个
+根据此定义，本文件包含“标题为 XYZ”的部分。该文件可能包含免责声明，该声明位于通知旁边。
+本许可声明本许可适用于该文档。这些保证
+本文件中的免责声明均视为已通过引用纳入本文件。
+许可，但仅限于免责声明方面：任何其他
+这些免责声明可能包含的含义无效且已失效。
+不影响本许可的含义。2. 逐字复制 您可以将本文档以任何媒介复制和分发，无论使用何种媒介
+无论是商业用途还是非商业用途，只要本许可协议允许，
+版权声明和许可声明（说明本许可适用）
+文档中的所有副本均会复制该文档，并且您不得添加任何内容。
+除本许可协议规定的条件外，您不得使用任何其他条件。
+采取技术措施来阻碍或控制阅读或其他
+复制您制作或分发的副本。但是，您可以接受
+以赠送副本作为报酬。如果你分发足够多的副本。
+关于复印份数，您还必须遵守第 3 节中的条件。您也可以在遵守上述相同条件的前提下出借复印件。
+您可以公开展示副本。
+3. 大量复制 如果您出版印刷版（或以常用媒体形式出版的副本）
+该文件的印刷封面）超过100个，以及
+文件许可声明需要封面文字，您必须附上。
+封面上的副本清晰易读地包含所有这些封面信息
+文字：封面文字位于封面，封底文字位于封底。
+封底。两个封面都必须清晰易读地标明。
+您作为这些副本的出版商。封面必须显示
+完整的标题，标题中的所有单词都同等突出，并且
+可见。您还可以在封面上添加其他材料。
+复制时仅修改封面，只要封面保持原样即可。
+文件的标题若满足这些条件，即可予以处理。
+在其他方面则完全照搬。如果任一封面所需的文本量过大而无法容纳
+请清晰地写下列出的第一项（尽可能多地写）。
+在实际封面上合理地）添加其余部分，然后继续在相邻的封面上添加其余部分。
+页。如果您发布或分发文档编号的不透明副本
+如果超过 100 个字符，则必须包含一个机器可读的透明文件。
+每份不透明副本都附带一份副本，或者在每份不透明副本中或随附一份声明。
+计算机网络位置，通用网络用户可从中访问。
+公众可以使用公共标准网络协议进行下载
+一份完整的透明文档副本，不含任何添加内容。
+如果你选择后一种方案，则必须采取合理谨慎的步骤。
+当您开始大量分发不透明副本时，为确保
+此透明副本将继续按所述方式提供访问。
+地点至少在您最后一次分发后一年内保持不变
+（直接或通过您的代理商或零售商）该内容的不透明副本
+公开发行。建议您（但不强制要求）联系作者。
+在重新分发任何大量副本之前，务必做好充分的记录。
+给他们一个机会，让他们提供更新版本的
+文档。
+4. 修改 您可以根据以下规定复制和分发本文档的修改版本：
+上述第2节和第3节的条件，前提是您放弃
+本许可协议下的修改版本，以及修改后的版本，均受本许可协议的约束。
+版本扮演文档的角色，从而授权分发
+并将修改后的版本提供给任何拥有该副本的人。
+此外，修改后的版本还必须包含以下内容：A. 在标题页（以及封面，如有）上使用一个独特的标题。
+从本文档以及先前版本中获取
+（如果有的话，应该列在“历史记录”部分）
+（文档）。您可以使用与先前版本相同的标题。
+如果该版本的原出版商允许的话。
+B. 在标题页上列出作者，可以是一个或多个个人或实体。
+负责修改后的文本中修改内容的作者身份
+版本，以及至少五位主要作者
+文件（如果主要作者少于五位，则需提供所有主要作者信息）
+除非他们解除你的这项要求。
+C. 在标题页上注明出版商的名称
+修改版本，出版商为[此处应填写出版商名称]。
+D. 保留文档的所有版权声明。
+E. 为您的修改添加适当的版权声明。
+与其他版权声明相邻。
+F. 在版权声明之后紧接着添加许可声明
+允许公众根据以下规定使用修改后的版本：
+本许可条款，以下列附录中所示的形式呈现。
+G. 在该许可声明中保留所有不变截面的完整列表。
+以及文件许可声明中规定的必要封面文字。
+H. 附上本许可证的未修改副本。
+一、保留题为“历史”的部分，保留其标题，并添加
+在其中添加一条信息，至少要注明标题、年份、新作者等。
+修订版的出版商，如标题页所示。
+文档中没有名为“历史记录”的章节，请创建一个。
+注明文件的标题、年份、作者和出版商
+在其标题页上给出，然后添加一个描述修改内容的条目
+版本如前句所述。
+J. 保留文档中给出的网络位置（如有）。
+公众可以访问该文件的透明副本，同样地
+文档中给出的先前版本的网络位置
+它以此为基础。这些内容可以放在“历史”部分。
+对于已发布的作品，您可以省略其网络位置。
+至少在文件本身之前四年，或者如果原件
+它所指版本的出版商已授予许可。
+K. 对于任何标题为“致谢”或“献词”的章节，
+保留该章节的标题，并在该章节中保留所有内容
+每段致谢内容的实质和语气
+和/或其中所作的献词。
+L. 保留文档的所有不变部分，
+正文和标题均保持不变。章节编号
+或类似内容不被视为章节标题的一部分。
+M. 删除标题为“背书”的任何部分。
+可能不会包含在修改版本中。
+N. 请勿将任何现有章节的标题更改为“推荐语”。
+或与任何不变章节的标题相冲突。
+O. 保留所有免责声明。如果修改后的版本包含新的前言部分或
+符合次要章节条件且不包含任何实质性内容的附录
+从文档中复制的内容，您可以选择指定部分或全部
+将这些章节视为不变的。为此，请将它们的标题添加到……
+修改版本许可声明中的不变章节列表。
+这些标题必须与其他任何章节标题区分开来。您可以添加一个名为“推荐语”的章节，但该章节必须包含以下内容。
+除了各界人士对您修改版的认可之外，没有其他任何内容。
+各方——例如，同行评审声明或文本已……
+已被某个组织认可为权威定义
+标准。您可以添加一段最多五个字的文字作为封面文字，以及
+最多 25 个单词的段落作为封底文字，放在列表末尾
+修改版封面文字。只有一段
+封面文字和封底文字之一可以由（或）添加。
+通过任何实体达成的安排。如果该文件已经
+包含您之前添加的同一封面的封面文字
+根据您所代表的同一实体所作出的安排，
+你不得添加新的，但可以替换旧的，前提是明确指定。
+已获得添加旧版本的先前出版商的许可。本文档的作者和出版商不受本许可约束。
+允许使用他们的姓名进行宣传或主张或
+表示对任何修改版本的认可。
+5. 文件合并 您可以将本文件与根据本规定发布的其他文件合并。
+根据上文第 4 节定义的条款，对修改后的版本授予许可。
+版本，前提是您将所有版本都包含在组合中
+所有原始文档的不变部分，未作修改，且
+将它们全部列为你们综合作品中的不变部分。
+许可声明，以及您保留所有免责声明。合并后的作品只需包含一份本许可协议副本，并且
+多个相同的截面可以替换为单个截面。
+复制。如果存在多个同名不变节，但
+不同的内容，使每个章节的标题都独一无二。
+在末尾用括号注明原名称
+如果知道该部分的作者或出版商，则填写该部分的作者或出版商；否则，填写一个唯一的编号。
+对列表中的章节标题进行同样的调整。
+合并作品许可声明中的不变章节。在合并作品中，您必须合并所有标题为“历史”的章节。
+在各种原始文件中，构成一个标题为“
+“历史”；同样地，合并任何标题为“致谢”的部分，
+以及所有标题为“献词”的部分。您必须删除所有这些部分。
+标题为“推荐”。
+6. 文件集合 您可以创建一个包含该文件和其他文件的集合。
+根据本许可协议发布的文件，并取代个人
+本许可证的副本包含在各个文件中，且仅一份。
+只要你遵守规则，它就会被纳入收藏。
+本许可允许逐字复制所有文档。
+其他方面。您可以从这样的集合中提取单个文档，并且
+根据本许可协议单独分发，前提是您插入一个
+将此许可证副本复制到提取的文档中，并按照以下步骤操作
+除逐字复制外，所有其他方面的许可均适用。
+文档。
+7. 与独立作品的聚合：将本文档或其衍生作品与其他独立作品汇编在一起。
+以及独立文件或作品，在存储卷册中或卷册上
+如果版权归原作者所有，则分发媒介被称为“聚合体”。
+汇编所得结果不得用于限制法律权利。
+超出单个作品允许范围的合辑用户。
+当文档包含在聚合文件中时，本许可不适用。
+适用于其他作品的总和，这些作品本身并非如此。
+本文件的衍生作品。如果第 3 节的封面文本要求适用于这些作品。
+文件副本，如果文件不足一半
+整个汇总数据，即文件的封面文本，可以放置在
+涵盖了将文档包含在集合体中的范围，或者说，
+如果文件为电子形式，则提供电子版封面。
+否则，它们必须出现在涵盖整个内容的印刷封面上。
+总计的。
+8. 翻译 翻译被视为一种修改，因此您可以
+根据第 4 条的规定分发该文件的译文。
+用平移替换不变截面需要特殊方法。
+需获得版权所有者的许可，但您可以包含
+除了对部分或全部不变截面进行平移之外，
+这些不变截面的原始版本。您可以包含一个
+本许可证的翻译，以及所有许可证声明
+文件及任何免责声明，前提是您也包含这些内容。
+本许可证的原始英文版本和原始版本
+这些通知和免责声明。如果双方存在分歧，
+本许可的译文和原文或通知
+如果文档中某个章节的标题为“致谢”，则以原版本为准。
+“献词”或“历史”，以及保存的要求（第 4 条）。
+其标题（第 1 部分）通常需要更改实际内容
+标题。
+9. 终止 您不得复制、修改、再许可或分发本文件
+除非本许可另有明确规定。任何尝试
+否则，复制、修改、再许可或分发均属无效。
+这将自动终止您在本许可下的权利。但是，如果您停止所有违反本许可的行为，则您的许可将恢复有效。
+从特定版权所有者处恢复的版权是（a）临时性的，
+除非版权所有者明确且最终地……
+（a）终止您的许可，以及（b）如果版权所有者终止您的许可，则永久终止您的许可。
+未能在事前以合理方式通知您违规行为
+终止后 60 天。此外，您从特定版权所有者处获得的许可是
+如果版权所有者通知您，则永久恢复版权。
+通过某种合理的手段违反规定，这是你第一次……
+收到来自该方的关于违反本许可协议（针对任何作品）的通知
+版权所有者，且您在30天内纠正了侵权行为。
+您已收到通知。根据本节规定终止您的权利并不意味着终止
+根据许可协议，已从您处获得副本或权利的各方均已获得您的许可。
+本许可。如果您的权利已被终止且并非永久性终止，
+恢复原职后，收到部分或全部相同材料的副本。
+不授予你任何使用权。
+10. 本许可的未来修订自由软件基金会可能会发布新的、修订后的版本
+GNU 自由文档许可证会不时更新。此类新版本
+精神上与现有版本相似，但可能有所不同
+详细说明，以解决新问题或疑虑。参见
+http://www.gnu.org/copyleft/ 。许可证的每个版本都有一个唯一的版本号。
+如果文档指定了此文档的特定编号版本。
+许可协议“或任何后续版本”均适用于此，您可以选择
+遵循该指定版本或
+任何后续版本（非草稿）均由……发布
+自由软件基金会。如果文档未指定版本
+无论本许可证的编号是多少，您可以选择任何已发布的版本（而非非许可证）。
+由自由软件基金会以草案形式发布。如果该文档
+具体来说，代理可以决定此软件的未来版本。
+许可证可以使用，该代理人的公开声明表示接受
+版本授权您永久选择该版本。
+文件 11. 重新许可​​ “大型多作者协作站点”（或“MMC 站点”）是指任何
+发布受版权保护作品的万维网服务器，以及
+为任何人编辑这些作品提供了便捷的途径。
+任何人都可以编辑的公共维基就是这类服务器的一个例子。
+网站中包含的“大规模多作者协作”（或“MMC”）
+指在 MMC 网站上发布的任何受版权保护的作品集。“CC-BY-SA”指知识共享署名-相同方式共享 3.0 协议。
+本许可由非营利组织知识共享组织（Creative Commons Corporation）发布。
+总部位于旧金山的公司
+加利福尼亚州，以及该许可的未来所有 copyleft 版本
+由同一组织出版。“Incorporate”是指出版或重新出版一份文件，无论是全部还是部分。
+作为另一份文件的一部分。如果 MMC 根据此文件获得许可，则其“有资格重新获得许可”。
+本许可协议，以及所有最初根据本许可协议发布的作品。
+在 MMC 之外的其他地方，随后全部或部分地并入其中
+部分内容纳入 MMC，（1）没有封面文本或不变章节，以及
+（2）因此在 2008 年 11 月 1 日之前已纳入。MMC 网站的运营者可以重新发布该网站中包含的 MMC。
+在 2009 年 8 月 1 日之前的任何时间，均以 CC-BY-SA 协议发布在同一网站上。
+前提是 MMC 符合重新颁发许可证的条件。
+附录：如何在您的文档中使用此许可协议 要在您编写的文档中使用此许可协议，请包含一份副本。
+在文档中添加许可证，并附上以下版权声明：
+标题页之后是版权声明：版权所有 (c) 年 您的姓名。
+允许复制、分发和/或修改本文件
+根据 GNU 自由文档许可证 1.3 版的条款
+或自由软件基金会发布的任何后续版本；
+没有不变章节，没有封面文字，也没有封底文字。
+许可证副本包含在题为“GNU”的部分中
+免费文档许可”。如果您有不变章节、封面文字和封底文字，
+将“with...Texts.”行替换为以下内容：其中不变章节为“列出其标题”，其中
+封面文字为列表，封底文字也为列表。如果您有不带封面文字的固定章节，或其他情况。
+结合这三者，将这两种方案合并以适应……
+情况。如果您的文档包含非平凡的程序代码示例，我们
+建议您选择以下方式并行发布这些示例：
+自由软件许可证，例如 GNU 通用公共许可证
+允许在自由软件中使用它们。

@@ -1,6 +1,6 @@
 [sikuwa]
 project_name = "sikuwa"
-version = "1.2.0"
+version = "1.3.0"
 main_script = "sikuwa/__main__.py"
 src_dir = "."
 output_dir = "dist"
@@ -44,3 +44,4 @@ extra_args = [
     "--assume-yes-for-downloads",
     "--show-progress",
 ]
+

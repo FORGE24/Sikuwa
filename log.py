@@ -13,7 +13,11 @@ from typing import Optional, Any, Callable
 from datetime import datetime
 from enum import IntEnum
 
-from sikuwa.i18n import _
+# 兼容扁平结构和包结构的导入
+try:
+    from sikuwa.i18n import _
+except ImportError:
+    from i18n import _
 
 
 class LogLevel(IntEnum):
@@ -484,4 +488,4 @@ if __name__ == '__main__':
         time.sleep(0.05)
         print(_("执行中..."))
     
-    print(f"\n{_("所有测试完成！")}")
+    print(f"\n{_('所有测试完成!')}")

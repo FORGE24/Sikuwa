@@ -2,28 +2,68 @@
 
 ## 介绍
 
-Sikuwa 是一款基于 Nuitka 的 Python 项目打包工具，专注于提供简单高效的跨平台编译解决方案。它通过配置化管理和自动化流程，将 Python 项目转换为独立可执行文件，支持 Windows、Linux 和 macOS 多平台分发。
+Sikuwa 是一款强大的 Python 项目打包工具，支持两种编译模式：
+1. **Nuitka 模式**：传统 Python → 机器码编译
+2. **Native 模式**：Python → C/C++ → GCC/G++ → dll/so + exe（生成通用动态链接库）
+
+专注于提供简单高效的跨平台编译解决方案，通过配置化管理和自动化流程，将 Python 项目转换为独立可执行文件，支持 Windows、Linux 和 macOS 多平台分发。
 
 ### 核心优势
+- **双重编译模式**：Nuitka 模式和原生 C/C++ 编译模式可选
+- **通用链接库**：Native 模式生成标准 dll/so，不依赖 Python 专用格式
 - **跨平台支持**：同时兼容 Windows、Linux 和 macOS 系统
 - **灵活配置**：通过 TOML 配置文件定制编译参数，满足不同项目需求
 - **双重环境检查**：自动检测系统依赖和编译环境，提前问题排查
-- **双重使用模式**：支持预编译版（独立工具链）和源码版（Python 库）两种使用方式
+- **智能缓存 V1.2**：编译即缓存，缓存即编译，预测缓存预热
+- **减量编译**：指哪编哪，只编译变更代码，依赖追踪自动传播，构建速度提升 10x+
 - **详细日志与清单**：生成构建日志和输出清单，便于版本管理和分发
 
 ## 更新说明
 
+### v1.4.0 主要特性
+1. **原生编译模式 (Native Mode)**
+   - 全新编译流程：Python源码 → C/C++源码 → GCC/G++编译 → dll/so + exe
+   - 生成通用动态链接库，不使用 Python 专用 .pyd 格式
+   - 支持 Cython 转换或内置简易转换器
+   - 自动检测系统 C/C++ 编译器（GCC/Clang/MSVC）
+   - 完整的 Python 运行时嵌入支持
+   - 可选静态/动态链接 Python 库
+
+2. **编译器支持**
+   - GCC/G++ (推荐)
+   - Clang/Clang++
+   - MSVC (cl.exe)
+
+3. **输出格式**
+   - `.dll` / `.so` / `.dylib` - 通用动态链接库
+   - `.exe` / 可执行文件 - 独立运行程序
+   - `.lib` / `.a` - 静态库（可选）
+
 ### v1.3.0 主要特性
-1. **智能缓存系统**
-   - 基于C++实现的高性能LRU缓存算法
+1. **智能缓存系统 V1.2**
+   - **编译即缓存**：每次编译自动记录，全历史可追溯
+   - **缓存即编译**：缓存命中等同于零成本编译
+   - **预测缓存预热**：基于访问模式智能预测，后台异步预编译
+   - 基于C++实现的高性能LRU缓存算法 + 访问频率权重
    - Python包装器接口，支持跨平台调用
    - 纯Python回退机制，确保兼容性
    - 智能缓存键生成策略，基于文件内容和构建参数
    - 与构建流程深度集成，自动管理缓存
    - 支持强制重建和缓存清理功能
 
-2. **性能优化**
+2. **减量编译系统（深度集成）**
+   - **指哪编哪**：单行/最小语法块为最小编译单元
+   - **精准检测**：基于 LCS 算法的版本快照对比
+   - **依赖追踪**：自动传播变更到所有受影响的关联单元
+   - **边界触发器**：函数/类修改自动扩展编译范围
+   - **智能合并**：按原始顺序拼接编译产物
+   - **混合架构**：C++ 高性能核心 + Python 回退实现
+   - **与缓存深度集成**：编译历史全记录，热点单元追踪
+
+3. **性能优化**
    - 首次构建约30秒，缓存命中约1.5秒
+   - 减量编译：只改一行只编译一行，增量构建 <0.5秒
+   - 预测预热：常用路径零等待
    - 大幅减少重复构建时间
    - 内存占用低，缓存管理高效
 
@@ -74,8 +114,11 @@ sikuwa init --force
 
 #### 2. 构建项目
 ```bash
-# 构建所有平台（默认配置）
+# 使用 Nuitka 构建（默认）
 sikuwa build
+
+# 使用原生编译模式构建
+sikuwa build -m native
 
 # 只构建特定平台
 sikuwa build -p windows
@@ -221,8 +264,49 @@ builder._generate_manifest()  # 生成构建清单文件
   - macOS：Xcode Command Line Tools
 - 依赖包：
   ```bash
-  pip install nuitka click tomli tomli_w
+  pip install nuitka click tomli tomli_w cython  # Cython 可选，用于 native 模式
   ```
+
+### 编译模式说明
+
+#### Nuitka 模式（默认）
+传统的 Python → 机器码编译，适合大多数场景。
+
+```bash
+sikuwa build           # 默认使用 Nuitka
+sikuwa build -m nuitka # 显式指定
+```
+
+#### Native 模式（新增）
+Python → C/C++ → GCC/G++ → dll/so + exe，生成通用动态链接库。
+
+**优势：**
+- 生成标准 dll/so 文件，可被其他语言调用
+- 不依赖 Python 专用格式（.pyd）
+- 更灵活的编译器控制
+- 便于与 C/C++ 项目集成
+
+```bash
+sikuwa build -m native           # 使用原生编译
+sikuwa build -m native -v        # 详细输出
+sikuwa build -m native --keep-c-source  # 保留 C 源码
+```
+
+**Native 模式配置示例（sikuwa.toml）：**
+```toml
+[sikuwa]
+project_name = "my_project"
+compiler_mode = "native"  # 使用原生编译
+
+[sikuwa.native]
+cc = "gcc"
+cxx = "g++"
+c_flags = ["-O2", "-fPIC"]
+output_dll = true   # 生成 dll/so
+output_exe = true   # 生成 exe
+lto = true          # 启用链接时优化
+strip = true        # 剥离符号
+```
 
 ### 编译步骤
 
@@ -232,7 +316,7 @@ builder._generate_manifest()  # 生成构建清单文件
    sikuwa init
    
    # 编辑配置文件（关键配置项）
-   # 项目名称、入口文件、目标平台、Nuitka 选项等
+   # 项目名称、入口文件、目标平台、编译选项等
    ```
 
 2. **检查环境**
@@ -243,8 +327,11 @@ builder._generate_manifest()  # 生成构建清单文件
 
 3. **执行编译**
    ```bash
-   # 基础编译（所有平台）
+   # Nuitka 模式（默认）
    sikuwa build
+   
+   # Native 模式
+   sikuwa build -m native
    
    # 单平台编译
    sikuwa build -p windows
@@ -254,10 +341,23 @@ builder._generate_manifest()  # 生成构建清单文件
    ```
 
 4. **查看输出**
-   编译成功后，输出文件位于配置指定的 `output_dir`（默认 `dist` 目录），按平台分类存放：
+   
+   **Nuitka 模式输出：**
    - Windows：`dist/项目名-windows/`
    - Linux：`dist/项目名-linux/`
    - macOS：`dist/项目名-macos/`
+   
+   **Native 模式输出：**
+   - Windows：`dist/native-windows/`
+     - `项目名.dll` - 通用动态链接库
+     - `项目名.exe` - 可执行文件
+     - `项目名.lib` - 导入库
+   - Linux：`dist/native-linux/`
+     - `lib项目名.so` - 共享库
+     - `项目名` - 可执行文件
+   - macOS：`dist/native-macos/`
+     - `lib项目名.dylib` - 动态库
+     - `项目名` - 可执行文件
 
 5. **验证结果**
    构建清单文件 `dist/build_manifest.json` 包含所有输出文件信息：

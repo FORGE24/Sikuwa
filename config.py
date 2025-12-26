@@ -87,6 +87,51 @@ class NuitkaOptions:
 
 
 @dataclass
+class NativeCompilerOptions:
+    """原生编译器选项 - Python → C/C++ → GCC/G++ → dll/so + exe"""
+    
+    # 编译模式
+    mode: str = "native"  # native | cython | cffi
+    
+    # 编译器选择
+    cc: str = "gcc"       # C 编译器
+    cxx: str = "g++"      # C++ 编译器
+    
+    # 编译选项
+    c_flags: List[str] = field(default_factory=lambda: ["-O2", "-fPIC"])
+    cxx_flags: List[str] = field(default_factory=lambda: ["-O2", "-fPIC", "-std=c++17"])
+    link_flags: List[str] = field(default_factory=list)
+    
+    # 输出选项
+    output_dll: bool = True      # 生成 dll/so
+    output_exe: bool = True      # 生成 exe
+    output_static: bool = False  # 生成静态库
+    
+    # 嵌入 Python
+    embed_python: bool = True    # 嵌入 Python 解释器
+    python_static: bool = False  # 静态链接 Python
+    
+    # 优化选项
+    lto: bool = False            # Link Time Optimization
+    strip: bool = True           # 剥离符号
+    
+    # 调试选项
+    debug: bool = False          # 调试模式
+    keep_c_source: bool = False  # 保留生成的 C/C++ 源码
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """转换为字典"""
+        return asdict(self)
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'NativeCompilerOptions':
+        """从字典创建"""
+        valid_fields = {f.name for f in cls.__dataclass_fields__.values()}
+        filtered_data = {k: v for k, v in data.items() if k in valid_fields}
+        return cls(**filtered_data)
+
+
+@dataclass
 class BuildConfig:
     """Sikuwa 构建配置"""
     
@@ -105,8 +150,14 @@ class BuildConfig:
     # 目标平台
     platforms: List[str] = field(default_factory=lambda: ["windows"])
     
-    # Nuitka 选项
+    # 编译模式选择: "nuitka" | "native"
+    compiler_mode: str = "nuitka"
+    
+    # Nuitka 选项 (compiler_mode="nuitka" 时使用)
     nuitka_options: NuitkaOptions = field(default_factory=NuitkaOptions)
+    
+    # 原生编译器选项 (compiler_mode="native" 时使用)
+    native_options: NativeCompilerOptions = field(default_factory=NativeCompilerOptions)
     
     # 资源文件
     resources: List[str] = field(default_factory=list)
@@ -154,6 +205,7 @@ class BuildConfig:
         """转换为字典"""
         data = asdict(self)
         data['nuitka_options'] = self.nuitka_options.to_dict()
+        data['native_options'] = self.native_options.to_dict()
         
         # 过滤掉值为 None 的字段，避免 TOML 序列化错误
         filtered_data = {}
@@ -170,11 +222,15 @@ class BuildConfig:
         nuitka_data = data.pop('nuitka_options', {})
         nuitka_options = NuitkaOptions.from_dict(nuitka_data)
         
+        # 提取 native_options
+        native_data = data.pop('native_options', {})
+        native_options = NativeCompilerOptions.from_dict(native_data)
+        
         # 过滤掉不存在的字段
         valid_fields = {f.name for f in cls.__dataclass_fields__.values()}
         filtered_data = {k: v for k, v in data.items() if k in valid_fields}
         
-        return cls(nuitka_options=nuitka_options, **filtered_data)
+        return cls(nuitka_options=nuitka_options, native_options=native_options, **filtered_data)
     
     @classmethod
     def from_toml(cls, config_file: str) -> 'BuildConfig':
@@ -205,8 +261,17 @@ class BuildConfig:
         
         nuitka_options = NuitkaOptions.from_dict(nuitka_data)
         
+        # 解析原生编译器选项
+        native_data = sikuwa_config.pop('native', {})
+        
+        # 处理可能存在的嵌套 native_options
+        if 'native_options' in sikuwa_config:
+            native_data.update(sikuwa_config.pop('native_options'))
+        
+        native_options = NativeCompilerOptions.from_dict(native_data)
+        
         # 创建配置对象
-        config = cls(nuitka_options=nuitka_options, **sikuwa_config)
+        config = cls(nuitka_options=nuitka_options, native_options=native_options, **sikuwa_config)
         
         return config
     

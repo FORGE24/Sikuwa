@@ -41,6 +41,11 @@ def cli():
     help='目标平台 (默认: 构建所有平台)'
 )
 @click.option(
+    '-m', '--mode',
+    type=click.Choice(['nuitka', 'native'], case_sensitive=False),
+    help='编译模式: nuitka (默认) | native (Python→C/C++→GCC→dll/so+exe)'
+)
+@click.option(
     '-v', '--verbose',
     is_flag=True,
     help=_('详细输出模式')
@@ -50,17 +55,32 @@ def cli():
     is_flag=True,
     help=_('强制重新构建')
 )
-def build(config: Optional[str], platform: Optional[str], verbose: bool, force: bool):
+@click.option(
+    '--keep-c-source',
+    is_flag=True,
+    help='保留生成的 C/C++ 源码 (仅 native 模式)'
+)
+def build(config: Optional[str], platform: Optional[str], mode: Optional[str], 
+          verbose: bool, force: bool, keep_c_source: bool):
     """
     构建项目
     
+    支持两种编译模式:
+    
+    \b
+    1. nuitka (默认): 使用 Nuitka 编译器
+    2. native: Python → C/C++ → GCC/G++ → dll/so + exe
+       生成通用动态链接库，不使用 Python 专用格式 (.pyd)
+    
     示例:
     
-        sikuwa build                    # 构建所有平台
+        sikuwa build                    # 使用 Nuitka 构建
+        
+        sikuwa build -m native          # 使用原生编译器构建
+        
+        sikuwa build -m native -v       # 原生编译 + 详细输出
         
         sikuwa build -p windows         # 只构建 Windows 平台
-        
-        sikuwa build -v                 # 详细输出
         
         sikuwa build -c my_config.toml  # 使用指定配置文件
     """
@@ -69,12 +89,19 @@ def build(config: Optional[str], platform: Optional[str], verbose: bool, force: 
         logger.info_operation("加载构建配置...")
         build_config = ConfigManager.load_config(config)
         
+        # 如果命令行指定了编译模式，覆盖配置文件中的设置
+        if mode:
+            build_config.compiler_mode = mode
+            if mode == 'native' and keep_c_source:
+                build_config.native_options.keep_c_source = True
+        
         # 验证配置
         logger.info_operation("验证配置...")
         build_config.validate()
         
         # 执行构建
         logger.info_operation(f"开始构建项目: {build_config.project_name}")
+        logger.info_operation(f"编译模式: {build_config.compiler_mode.upper()}")
         
         success = build_project(
             config=build_config,

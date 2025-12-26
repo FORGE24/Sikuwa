@@ -1,6 +1,9 @@
 # sikuwa/builder.py
 """
 Sikuwa Builder - Ultra-detailed log tracking
+支持两种编译模式：
+1. Nuitka 模式：传统 Python → 机器码编译
+2. Native 模式：Python → C/C++ → GCC/G++ → dll/so + exe
 """
 
 import subprocess
@@ -27,6 +30,14 @@ except ImportError as e:
 from sikuwa.config import BuildConfig
 from sikuwa.log import get_logger, PerfTimer, LogLevel
 from sikuwa.i18n import _
+
+# 尝试导入原生编译器
+_native_compiler_available = False
+try:
+    from sikuwa.compiler import NativeCompiler, CompilerConfig, native_build, detect_compiler
+    _native_compiler_available = True
+except ImportError as e:
+    print(f"Native compiler import error: {e}")
 
 
 class SikuwaBuilder:
@@ -126,9 +137,164 @@ class SikuwaBuilder:
     def build(self, platform: Optional[str] = None, force: bool = False):
         """Execute complete build process"""
         self.logger.info_operation("\n" + "=" * 70)
-        self.logger.info_operation(f"{_("开始构建")}: {self.config.project_name}")
+        self.logger.info_operation(f"{_('开始构建')}: {self.config.project_name}")
         self.logger.info_operation("=" * 70)
         
+        # 检查编译模式
+        compiler_mode = getattr(self.config, 'compiler_mode', 'nuitka')
+        self.logger.info_operation(f"{_('编译模式')}: {compiler_mode.upper()}")
+        
+        if compiler_mode == 'native':
+            self._build_native(platform, force)
+        else:
+            self._build_nuitka(platform, force)
+    
+    def _build_native(self, platform: Optional[str] = None, force: bool = False):
+        """使用原生编译器构建 (Python → C/C++ → GCC/G++ → dll/so + exe)"""
+        if not _native_compiler_available:
+            raise RuntimeError(
+                "原生编译器模块不可用，请检查 sikuwa/compiler.py 是否存在"
+            )
+        
+        with PerfTimer(_("原生编译流程"), self.logger):
+            try:
+                # Step 1: 验证环境
+                self.logger.info_operation("\n[1/4] " + _("验证构建环境") + "...")
+                with PerfTimer(_("验证环境"), self.logger):
+                    self._validate_native_environment()
+                self.logger.info_operation("[OK] " + _("环境验证通过"))
+                
+                # Step 2: 执行原生编译
+                self.logger.info_operation("\n[2/4] " + _("执行原生编译") + "...")
+                platforms = [platform] if platform else self.config.platforms
+                
+                for plat in platforms:
+                    self.logger.info_operation(f"\n--- {_('构建平台')}: {plat} ---")
+                    with PerfTimer(f"{_('原生编译')} {plat}", self.logger):
+                        self._execute_native_build(plat, force)
+                
+                self.logger.info_operation("[OK] " + _("编译完成"))
+                
+                # Step 3: 复制资源
+                self.logger.info_operation("\n[3/4] " + _("复制资源文件") + "...")
+                with PerfTimer(_("复制资源"), self.logger):
+                    self._copy_resources_native()
+                self.logger.info_operation("[OK] " + _("资源复制完成"))
+                
+                # Step 4: 生成清单
+                self.logger.info_operation("\n[4/4] " + _("生成构建清单") + "...")
+                with PerfTimer(_("生成清单"), self.logger):
+                    self._generate_manifest()
+                self.logger.info_operation("[OK] " + _("清单生成完成"))
+                
+                # 构建成功
+                self.logger.info_operation("\n" + "=" * 70)
+                self.logger.info_operation(_("原生编译成功完成!"))
+                self.logger.info_operation("=" * 70)
+                self.logger.info_operation(f"{_('输出目录')}: {self.output_dir.absolute()}")
+                self.logger.info_operation(_("生成文件") + ":")
+                self.logger.info_operation(f"  - {self.config.project_name}.dll/so ({_('通用动态链接库')})")
+                self.logger.info_operation(f"  - {self.config.project_name}.exe ({_('可执行文件')})")
+                self.logger.info_operation("")
+                
+            except Exception as e:
+                self.logger.error_minimal(f"\n[FAIL] " + _("原生编译失败") + f": {e}")
+                self.logger.debug_detail(f"完整异常堆栈:\n{traceback.format_exc()}")
+                raise
+    
+    def _validate_native_environment(self):
+        """验证原生编译环境"""
+        self.logger.trace_flow(">>> _validate_native_environment")
+        
+        # 检查 Python 版本
+        python_version = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+        self.logger.debug_detail(f"Python {_('版本')}: {python_version}")
+        
+        # 检测 C/C++ 编译器
+        try:
+            cc, cxx = detect_compiler()
+            self.logger.debug_detail(f"C {_('编译器')}: {cc}")
+            self.logger.debug_detail(f"C++ {_('编译器')}: {cxx}")
+        except RuntimeError as e:
+            self.logger.error_dependency(f"[FAIL] {e}")
+            raise
+        
+        # 检查 Cython (可选)
+        try:
+            import Cython
+            self.logger.debug_detail(f"Cython {_('版本')}: {Cython.__version__}")
+        except ImportError:
+            self.logger.warn_minor(f"Cython {_('未安装')}, {_('将使用内置转换器')}")
+        
+        # 检查入口文件
+        main_file = Path(self.config.src_dir) / self.config.main_script
+        if not main_file.exists():
+            raise FileNotFoundError(f"{_('入口文件不存在')}: {main_file}")
+        
+        self.logger.trace_flow("<<< _validate_native_environment")
+    
+    def _execute_native_build(self, platform: str, force: bool):
+        """执行原生编译"""
+        # 构建编译器配置
+        native_opts = self.config.native_options
+        compiler_config = CompilerConfig(
+            mode=native_opts.mode,
+            cc=native_opts.cc,
+            cxx=native_opts.cxx,
+            c_flags=native_opts.c_flags,
+            cxx_flags=native_opts.cxx_flags,
+            link_flags=native_opts.link_flags,
+            output_dll=native_opts.output_dll,
+            output_exe=native_opts.output_exe,
+            output_static=native_opts.output_static,
+            embed_python=native_opts.embed_python,
+            python_static=native_opts.python_static,
+            lto=native_opts.lto,
+            strip=native_opts.strip,
+            debug=native_opts.debug,
+            keep_c_source=native_opts.keep_c_source,
+        )
+        
+        # 执行编译
+        results = native_build(
+            project_name=self.config.project_name,
+            src_dir=self.config.src_dir,
+            main_script=self.config.main_script,
+            output_dir=str(self.output_dir),
+            platform=platform,
+            compiler_config=compiler_config,
+            verbose=self.verbose
+        )
+        
+        self.logger.info_operation(f"[OK] {_('生成文件')}:")
+        for file_type, file_path in results.items():
+            self.logger.info_operation(f"  - {file_type}: {file_path.name}")
+    
+    def _copy_resources_native(self):
+        """复制资源文件到原生编译输出目录"""
+        if not self.config.resources:
+            self.logger.debug_detail(_("没有需要复制的资源文件"))
+            return
+        
+        for platform in self.config.platforms:
+            platform_dir = self.output_dir / f"native-{platform}"
+            
+            if not platform_dir.exists():
+                self.logger.warn_minor(f"[WARN] {_('平台目录不存在')}: {platform_dir}")
+                continue
+            
+            for resource in self.config.resources:
+                src = Path(resource)
+                if src.exists():
+                    if src.is_dir():
+                        dest = platform_dir / src.name
+                        shutil.copytree(src, dest, dirs_exist_ok=True)
+                    else:
+                        shutil.copy2(src, platform_dir / src.name)
+                    self.logger.trace_io(f"  {_('复制')}: {src.name}")
+    
+    def _build_nuitka(self, platform: Optional[str] = None, force: bool = False):
+        """使用 Nuitka 构建 (原有逻辑)"""
         with PerfTimer(_("完整构建流程"), self.logger):
             try:
                 # Step 1: Validate environment
@@ -146,11 +312,11 @@ class SikuwaBuilder:
                 # Step 3: Execute compilation
                 self.logger.info_operation("\n[3/5] " + _("执行编译") + "...")
                 if platform:
-                    self.logger.info_operation(f"   {_("目标平台")}: {platform}")
-                    with PerfTimer(f"{_("编译")} {platform}", self.logger):
+                    self.logger.info_operation(f"   {_('目标平台')}: {platform}")
+                    with PerfTimer(f"{_('编译')} {platform}", self.logger):
                         self._build_single_platform(platform, force)
                 else:
-                    self.logger.info_operation(f"   {_("目标平台")}: {', '.join(self.config.platforms)}")
+                    self.logger.info_operation(f"   {_('目标平台')}: {', '.join(self.config.platforms)}")
                     with PerfTimer(_("编译所有平台"), self.logger):
                         self._build_all_platforms(force)
                 self.logger.info_operation("[OK] " + _("编译完成"))
@@ -171,7 +337,7 @@ class SikuwaBuilder:
                 self.logger.info_operation("\n" + "=" * 70)
                 self.logger.info_operation(_("构建成功完成!") + "")
                 self.logger.info_operation("=" * 70)
-                self.logger.info_operation(f"{_("输出目录")}: {self.output_dir.absolute()}")
+                self.logger.info_operation(f"{_('输出目录')}: {self.output_dir.absolute()}")
                 self.logger.info_operation("")
                 
             except Exception as e:

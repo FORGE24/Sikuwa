@@ -1,0 +1,211 @@
+# Sikuwa translation template
+# Copyright (C) 2025 Sikuwa Team
+# This file is distributed under the same license as the Sikuwa package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Sikuwa 1.2.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-11-20 15:00+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+# CLI messages
+msgid "详细输出模式"
+msgstr ""
+
+msgid "强制重新构建"
+msgstr ""
+
+msgid "覆盖已存在的配置文件"
+msgstr ""
+
+msgid "有序集合支持"
+msgstr ""
+
+msgid "诊断完成"
+msgstr ""
+
+msgid "完整配置"
+msgstr ""
+
+# Log messages
+msgid "带颜色的日志格式化器"
+msgstr ""
+
+msgid "注册所有自定义日志级别"
+msgstr ""
+
+msgid "极细粒度状态变更"
+msgstr ""
+
+msgid "微观性能计时"
+msgstr ""
+
+msgid "函数进入退出跟踪"
+msgstr ""
+
+msgid "详细调试信息"
+msgstr ""
+
+msgid "业务操作记录"
+msgstr ""
+
+msgid "用户可见操作"
+msgstr ""
+
+msgid "周期性指标快照"
+msgstr ""
+
+msgid "健康检查通过"
+msgstr ""
+
+msgid "非致命配置变更"
+msgstr ""
+
+msgid "接近阈值"
+msgstr ""
+
+msgid "轻微异常"
+msgstr ""
+
+msgid "重试事件"
+msgstr ""
+
+msgid "资源接近上限"
+msgstr ""
+
+msgid "使用不推荐接口"
+msgstr ""
+
+msgid "可疑安全事件"
+msgstr ""
+
+msgid "业务错误"
+msgstr ""
+
+msgid "数据库错误"
+msgstr ""
+
+msgid "数据一致性问题"
+msgstr ""
+
+msgid "外部依赖失败"
+msgstr ""
+
+msgid "已确认安全问题"
+msgstr ""
+
+msgid "服务功能不可用"
+msgstr ""
+
+msgid "数据持久化失败"
+msgstr ""
+
+msgid "系统降级"
+msgstr ""
+
+msgid "级联故障"
+msgstr ""
+
+msgid "严重安全事件"
+msgstr ""
+
+msgid "获取全局日志器实例"
+msgstr ""
+
+msgid "设置日志级别"
+msgstr ""
+
+msgid "测试计时块"
+msgstr ""
+
+# Builder messages
+msgid "设置构建目录"
+msgstr ""
+
+msgid "输出目录"
+msgstr ""
+
+msgid "构建目录"
+msgstr ""
+
+msgid "日志目录"
+msgstr ""
+
+msgid "执行完整构建流程"
+msgstr ""
+
+msgid "完整构建流程"
+msgstr ""
+
+msgid "验证环境"
+msgstr ""
+
+msgid "准备源代码"
+msgstr ""
+
+msgid "编译所有平台"
+msgstr ""
+
+msgid "复制资源"
+msgstr ""
+
+msgid "生成清单"
+msgstr ""
+
+msgid "验证构建环境"
+msgstr ""
+
+msgid "构建所有平台"
+msgstr ""
+
+msgid "构建单一平台"
+msgstr ""
+
+msgid "复制资源文件"
+msgstr ""
+
+msgid "没有需要复制的资源文件"
+msgstr ""
+
+msgid "生成构建清单"
+msgstr ""
+
+msgid "清理构建文件"
+msgstr ""
+
+msgid "构建器工厂"
+msgstr ""
+
+msgid "从配置创建构建器"
+msgstr ""
+
+msgid "从配置文件创建构建器"
+msgstr ""
+
+msgid "构建项目"
+msgstr ""
+
+msgid "启动构建流程"
+msgstr ""
+
+msgid "构建流程完成"
+msgstr ""
+
+msgid "清理项目"
+msgstr ""
+
+msgid "启动清理流程"
+msgstr ""
+
+msgid "清理流程完成"
+msgstr ""

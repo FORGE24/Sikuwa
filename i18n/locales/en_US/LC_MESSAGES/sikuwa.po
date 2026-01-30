@@ -1,0 +1,210 @@
+# English translations for Sikuwa package.
+# Copyright (C) 2025 Sikuwa Team
+# This file is distributed under the same license as the Sikuwa package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Sikuwa 1.2.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-11-20 15:00+0800\n"
+"PO-Revision-Date: 2025-11-20 15:30+0800\n"
+"Last-Translator: Sikuwa Team <team@sikuwa.dev>\n"
+"Language-Team: English <en@li.org>\n"
+"Language: en_US\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+# CLI messages
+msgid "详细输出模式"
+msgstr "Verbose output mode"
+
+msgid "强制重新构建"
+msgstr "Force rebuild"
+
+msgid "覆盖已存在的配置文件"
+msgstr "Overwrite existing configuration file"
+
+msgid "有序集合支持"
+msgstr "Ordered set support"
+
+msgid "诊断完成"
+msgstr "Diagnosis completed"
+
+msgid "完整配置"
+msgstr "Full configuration"
+
+# Log messages
+msgid "带颜色的日志格式化器"
+msgstr "Colored log formatter"
+
+msgid "注册所有自定义日志级别"
+msgstr "Register all custom log levels"
+
+msgid "极细粒度状态变更"
+msgstr "Ultra-fine-grained state changes"
+
+msgid "微观性能计时"
+msgstr "Micro performance timing"
+
+msgid "函数进入退出跟踪"
+msgstr "Function entry/exit tracking"
+
+msgid "详细调试信息"
+msgstr "Detailed debugging information"
+
+msgid "业务操作记录"
+msgstr "Business operation records"
+
+msgid "用户可见操作"
+msgstr "User-visible operations"
+
+msgid "周期性指标快照"
+msgstr "Periodic metrics snapshots"
+
+msgid "健康检查通过"
+msgstr "Health check passed"
+
+msgid "非致命配置变更"
+msgstr "Non-fatal configuration changes"
+
+msgid "接近阈值"
+msgstr "Approaching threshold"
+
+msgid "轻微异常"
+msgstr "Minor anomalies"
+
+msgid "重试事件"
+msgstr "Retry events"
+
+msgid "资源接近上限"
+msgstr "Resources approaching limit"
+
+msgid "使用不推荐接口"
+msgstr "Using deprecated interface"
+
+msgid "可疑安全事件"
+msgstr "Suspicious security events"
+
+msgid "业务错误"
+msgstr "Business errors"
+
+msgid "数据库错误"
+msgstr "Database errors"
+
+msgid "数据一致性问题"
+msgstr "Data consistency issues"
+
+msgid "外部依赖失败"
+msgstr "External dependency failures"
+
+msgid "已确认安全问题"
+msgstr "Confirmed security issues"
+
+msgid "服务功能不可用"
+msgstr "Service function unavailable"
+
+msgid "数据持久化失败"
+msgstr "Data persistence failed"
+
+msgid "系统降级"
+msgstr "System degradation"
+
+msgid "级联故障"
+msgstr "Cascading failures"
+
+msgid "严重安全事件"
+msgstr "Severe security events"
+
+msgid "获取全局日志器实例"
+msgstr "Get global logger instance"
+
+msgid "设置日志级别"
+msgstr "Set log level"
+
+msgid "测试计时块"
+msgstr "Test timing block"
+
+# Builder messages
+msgid "设置构建目录"
+msgstr "Set up build directories"
+
+msgid "输出目录"
+msgstr "Output directory"
+
+msgid "构建目录"
+msgstr "Build directory"
+
+msgid "日志目录"
+msgstr "Log directory"
+
+msgid "执行完整构建流程"
+msgstr "Execute complete build process"
+
+msgid "完整构建流程"
+msgstr "Complete build process"
+
+msgid "验证环境"
+msgstr "Verify environment"
+
+msgid "准备源代码"
+msgstr "Prepare source code"
+
+msgid "编译所有平台"
+msgstr "Compile for all platforms"
+
+msgid "复制资源"
+msgstr "Copy resources"
+
+msgid "生成清单"
+msgstr "Generate manifest"
+
+msgid "验证构建环境"
+msgstr "Verify build environment"
+
+msgid "构建所有平台"
+msgstr "Build all platforms"
+
+msgid "构建单一平台"
+msgstr "Build single platform"
+
+msgid "复制资源文件"
+msgstr "Copy resource files"
+
+msgid "没有需要复制的资源文件"
+msgstr "No resource files need to be copied"
+
+msgid "生成构建清单"
+msgstr "Generate build manifest"
+
+msgid "清理构建文件"
+msgstr "Clean up build files"
+
+msgid "构建器工厂"
+msgstr "Builder factory"
+
+msgid "从配置创建构建器"
+msgstr "Create builder from configuration"
+
+msgid "从配置文件创建构建器"
+msgstr "Create builder from configuration file"
+
+msgid "构建项目"
+msgstr "Build project"
+
+msgid "启动构建流程"
+msgstr "Start build process"
+
+msgid "构建流程完成"
+msgstr "Build process completed"
+
+msgid "清理项目"
+msgstr "Clean up project"
+
+msgid "启动清理流程"
+msgstr "Start cleanup process"
+
+msgid "清理流程完成"
+msgstr "Cleanup process completed"

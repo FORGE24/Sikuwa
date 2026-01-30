@@ -1,0 +1,100 @@
+# Sikuwa 原生编译配置示例
+# 编译流程: Python源码 → C/C++源码 → GCC/G++编译 → dll/so + exe
+# 生成通用动态链接库，不使用 Python 专用格式 (.pyd)
+
+[sikuwa]
+project_name = "my_project"
+version = "1.0.0"
+main_script = "main.py"
+src_dir = "."
+output_dir = "dist"
+build_dir = "build"
+platforms = ["windows"]
+
+# 编译模式: "nuitka" | "native"
+compiler_mode = "native"
+
+# 原生编译器配置
+[sikuwa.native]
+# 编译模式: native | cython | cffi
+mode = "native"
+
+# 编译器选择 (自动检测如果不指定)
+cc = "gcc"
+cxx = "g++"
+
+# C 编译选项
+c_flags = ["-O2", "-fPIC", "-Wall"]
+
+# C++ 编译选项
+cxx_flags = ["-O2", "-fPIC", "-std=c++17", "-Wall"]
+
+# 链接选项
+link_flags = []
+
+# 输出选项
+output_dll = true      # 生成 dll/so 动态链接库
+output_exe = true      # 生成 exe 可执行文件
+output_static = false  # 生成静态库 (.a/.lib)
+
+# Python 嵌入选项
+embed_python = true    # 嵌入 Python 解释器
+python_static = false  # 静态链接 Python (需要静态编译的 Python)
+
+# 优化选项
+lto = false            # Link Time Optimization (增加编译时间，减小体积)
+strip = true           # 剥离调试符号 (减小文件体积)
+
+# 调试选项
+debug = false          # 调试模式 (保留调试信息，禁用优化)
+keep_c_source = false  # 保留生成的 C/C++ 源码
+
+
+# ========================================
+# 示例2: 使用 Cython 优化的配置
+# ========================================
+# [sikuwa.native]
+# mode = "cython"  # 使用 Cython 进行 Python → C 转换
+# cc = "gcc"
+# cxx = "g++"
+# c_flags = ["-O3", "-fPIC", "-march=native"]  # 更激进的优化
+# lto = true
+# strip = true
+
+
+# ========================================
+# 示例3: 调试模式配置
+# ========================================
+# [sikuwa.native]
+# mode = "native"
+# cc = "gcc"
+# cxx = "g++"
+# c_flags = ["-g", "-O0", "-fPIC", "-Wall", "-Wextra"]
+# debug = true
+# strip = false
+# keep_c_source = true  # 保留 C 源码方便调试
+
+
+# ========================================
+# 示例4: Windows MSVC 配置
+# ========================================
+# [sikuwa.native]
+# mode = "native"
+# cc = "cl"
+# cxx = "cl"
+# c_flags = ["/O2", "/W3"]
+# cxx_flags = ["/O2", "/W3", "/std:c++17"]
+# link_flags = ["/MACHINE:X64"]
+
+
+# ========================================
+# 示例5: Linux 发布版配置
+# ========================================
+# [sikuwa.native]
+# mode = "cython"
+# cc = "gcc"
+# cxx = "g++"
+# c_flags = ["-O3", "-fPIC", "-march=x86-64", "-mtune=generic"]
+# lto = true
+# strip = true
+# python_static = true  # 静态链接 Python，无需目标系统安装 Python

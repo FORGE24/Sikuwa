@@ -83,31 +83,35 @@ Sikuwa 是一款专业的 Python 项目打包工具，基于 Nuitka 编译器构
 | 组件 | 版本要求 |
 |:---:|:---:|
 | Python | >= 3.7 |
-| Nuitka | >= 2.0 (自动安装) |
+| Nuitka | >= 2.0 |
 | GCC/G++ | >= 8.0 (Native 模式) |
 | CMake | >= 3.16 (可选) |
 
-### 安装方式
-
-**通过 pip 安装**
+### 获取工具链
 
 ```bash
-pip install sikuwa
-```
-
-**从 Gitee 源码安装**
-
-```bash
-git clone https://gitee.com/FORGE24/Sikuwa.git
+git clone https://gitee.com/CHENshidi__2020/Sikuwa.git
 cd Sikuwa
-pip install -e .
 ```
 
-**验证安装**
+### 安装依赖
 
 ```bash
-sikuwa --version
-sikuwa doctor
+pip install click tomli tomli-w nuitka
+```
+
+### 运行方式
+
+```bash
+# 直接运行
+python -m sikuwa --version
+python -m sikuwa doctor
+
+# 或添加别名 (PowerShell)
+Set-Alias sikuwa "python -m sikuwa"
+
+# 或添加别名 (Bash)
+alias sikuwa='python -m sikuwa'
 ```
 
 ---
@@ -346,7 +350,7 @@ sikuwa/
 
 ```bash
 # 克隆仓库
-git clone https://gitee.com/FORGE24/Sikuwa.git
+git clone https://gitee.com/CHENshidi__2020/Sikuwa.git
 cd Sikuwa
 
 # 创建虚拟环境
@@ -354,8 +358,8 @@ python -m venv .venv
 .venv\Scripts\activate  # Windows
 source .venv/bin/activate  # Linux/macOS
 
-# 安装开发依赖
-pip install -e ".[dev]"
+# 安装依赖
+pip install click tomli tomli-w nuitka pytest
 
 # 运行测试
 pytest tests/

@@ -1,0 +1,59 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.pyd
+
+# Distribution / Build
+dist/
+build/
+*.egg-info/
+*.egg
+*.whl
+
+# Virtual Environment
+.venv/
+venv/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Sikuwa Build Outputs
+sikuwa_logs/
+sikuwa_build/
+*.exe
+*.dll
+
+# C/C++ Build
+*.o
+*.obj
+*.lib
+*.a
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+
+# Cache
+.smart_cache/
+*.cache
+.mypy_cache/
+.pytest_cache/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+
+# Temporary
+*.tmp
+*.bak
+*~

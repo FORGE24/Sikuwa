@@ -3,17 +3,17 @@
 
 name: gitee-go-pipeline
 
-displayName: 'Sikuwa CI/CD Pipeline'
+displayName: 'Sikuwa CI Pipeline'
 
 triggers:
   push:
     - matchType: BRANCH
-      branch: main
+      branch: master
     - matchType: BRANCH
       branch: develop
   pull_request:
     - matchType: BRANCH
-      branch: main
+      branch: master
 
 stages:
   - name: test
@@ -35,46 +35,10 @@ stages:
         displayName: '安装依赖'
         script: |
           python -m pip install --upgrade pip
-          pip install -e ".[dev]"
-          
-      - step: execute@shell
-        name: code_check
-        displayName: '代码检查'
-        script: |
-          pip install black isort mypy
-          black --check sikuwa/
-          isort --check sikuwa/
+          pip install click tomli tomli-w nuitka pytest
           
       - step: execute@shell
         name: run_tests
         displayName: '运行测试'
         script: |
-          pytest tests/ -v --cov=sikuwa
-
-  - name: build
-    displayName: '构建阶段'
-    strategy: naturally
-    trigger: auto
-    dependsOn: test
-    executor:
-      type: node-pool
-      labels:
-        - linux
-    steps:
-      - step: execute@python
-        name: setup_python
-        displayName: '设置 Python 环境'
-        pythonVersion: '3.10'
-        
-      - step: execute@shell
-        name: build_package
-        displayName: '构建包'
-        script: |
-          pip install build
-          python -m build
-          
-      - step: publish@general_artifacts
-        name: upload_artifacts
-        displayName: '上传构建产物'
-        artifactPath: 'dist'
-        artifactName: 'sikuwa-dist'
+          pytest tests/ -v

@@ -90,16 +90,16 @@ python3 -m venv .venv
 source .venv/bin/activate
 ```
 
-**3. 安装开发依赖**
+**3. 安装依赖**
 
 ```bash
-pip install -e ".[dev]"
+pip install click tomli tomli-w nuitka pytest
 ```
 
 **4. 验证安装**
 
 ```bash
-sikuwa --version
+python -m sikuwa --version
 pytest tests/ -v
 ```
 
@@ -109,11 +109,8 @@ pytest tests/ -v
 click>=8.0
 tomli>=2.0 (Python < 3.11)
 tomli-w>=1.0
+nuitka>=2.0
 pytest>=7.0
-pytest-cov>=4.0
-black>=23.0
-isort>=5.0
-mypy>=1.0
 ```
 
 ---

@@ -1,0 +1,32 @@
+# CODEOWNERS
+# 代码所有者配置
+# 文档: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# 默认所有者
+* @FORGE24
+
+# 核心模块
+/sikuwa/builder.py @FORGE24
+/sikuwa/compiler.py @FORGE24
+/sikuwa/config.py @FORGE24
+/sikuwa/cli.py @FORGE24
+
+# 增量编译模块
+/sikuwa/incremental/ @FORGE24
+
+# C++ 扩展
+/sikuwa/cpp_cache/ @FORGE24
+
+# 国际化
+/sikuwa/i18n/ @FORGE24
+
+# 文档
+/docs/ @FORGE24
+*.md @FORGE24
+
+# CI/CD 配置
+/.github/ @FORGE24
+/.gitee/ @FORGE24
+
+# 测试
+/tests/ @FORGE24

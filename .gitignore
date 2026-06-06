@@ -41,9 +41,15 @@ Makefile
 
 # Cache
 .smart_cache/
+.sikuwa/
 *.cache
 .mypy_cache/
 .pytest_cache/
+
+# Rust
+/target/
+**/*.rs.bk
+*.pirb
 
 # OS
 .DS_Store

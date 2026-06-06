@@ -1,0 +1,38 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/sikuwa-core",
+    "crates/sikuwa-config",
+    "crates/sikuwa-pir",
+    "crates/sikuwa-pystat",
+    "crates/sikuwa-codegen-c",
+    "crates/sikuwa-link",
+    "crates/sikuwa-cli",
+]
+
+[workspace.package]
+version = "2.0.0-alpha.1"
+edition = "2021"
+license = "MIT"
+authors = ["Sikuwa Team"]
+repository = "https://github.com/FORGE24/Sikuwa"
+rust-version = "1.75"
+
+[workspace.dependencies]
+clap = { version = "4.5", features = ["derive"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "1.0"
+toml = "0.8"
+blake3 = "1.5"
+sikuwa-core = { path = "crates/sikuwa-core" }
+sikuwa-config = { path = "crates/sikuwa-config" }
+sikuwa-pir = { path = "crates/sikuwa-pir" }
+sikuwa-pystat = { path = "crates/sikuwa-pystat" }
+sikuwa-codegen-c = { path = "crates/sikuwa-codegen-c" }
+sikuwa-link = { path = "crates/sikuwa-link" }
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true

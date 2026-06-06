@@ -1,0 +1,14 @@
+[package]
+name = "sikuwa-config"
+description = "Sikuwa 2.0 configuration (schema v2)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+sikuwa-core.workspace = true
+serde.workspace = true
+toml.workspace = true

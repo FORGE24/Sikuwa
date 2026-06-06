@@ -1,0 +1,22 @@
+[package]
+name = "sikuwa-cli"
+description = "Sikuwa 2.0 command-line interface (Ver.A2)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[[bin]]
+name = "sikuwa"
+path = "src/main.rs"
+
+[dependencies]
+clap.workspace = true
+sikuwa-core.workspace = true
+sikuwa-config.workspace = true
+sikuwa-pir.workspace = true
+sikuwa-pystat.workspace = true
+sikuwa-codegen-c.workspace = true
+sikuwa-link.workspace = true

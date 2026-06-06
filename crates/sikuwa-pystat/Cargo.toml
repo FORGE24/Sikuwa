@@ -1,0 +1,16 @@
+[package]
+name = "sikuwa-pystat"
+description = "Sikuwa PyStat — PGTE type analysis and ITR slot planning"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+sikuwa-core.workspace = true
+sikuwa-pir.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+blake3.workspace = true

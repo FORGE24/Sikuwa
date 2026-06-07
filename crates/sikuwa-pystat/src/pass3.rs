@@ -84,7 +84,9 @@ pub fn run_func_body_cfg(
             None => continue,
         };
         let block = &func.blocks[idx];
-        let mut state = in_states.remove(&bid).unwrap_or_else(|| FrameState {
+        // Keep `in_states` entries for loop headers; removing them causes back-edges
+        // to re-insert the same block forever (e.g. `while` in sum_range.py).
+        let mut state = in_states.get(&bid).cloned().unwrap_or_else(|| FrameState {
             slots: slots.clone(),
             values: value_types.clone(),
         });
@@ -185,13 +187,21 @@ fn enqueue(
 ) {
     match in_states.get_mut(target) {
         Some(existing) => {
+            let before = existing.clone();
             merge_frame(existing, state);
+            if !frame_equal(&before, existing) {
+                work.push_back(target.clone());
+            }
         }
         None => {
             in_states.insert(target.clone(), state);
             work.push_back(target.clone());
         }
     }
+}
+
+fn frame_equal(a: &FrameState, b: &FrameState) -> bool {
+    a.slots.iter().eq(b.slots.iter()) && a.values == b.values
 }
 
 fn merge_frame(dst: &mut FrameState, src: FrameState) {
@@ -313,10 +323,16 @@ pub fn func_has_dyn_ops(func: &FuncDef) -> bool {
     func.blocks.iter().flat_map(|b| &b.ops).any(|op| {
         matches!(
             op.opcode,
-            OpCode::LoadAttr
+            OpCode::LoadGlobal
+                | OpCode::LoadAttr
                 | OpCode::StoreAttr
                 | OpCode::SubscriptLoad
                 | OpCode::SubscriptStore
+                | OpCode::BuildTuple
+                | OpCode::BuildList
+                | OpCode::BuildMap
+                | OpCode::CallIndirect
+                | OpCode::CallBuiltin
                 | OpCode::MakeClosure
                 | OpCode::BuildClass
                 | OpCode::GetIter
@@ -336,5 +352,60 @@ fn resolve_call(func: &FuncDef, op: &Op) -> Option<sikuwa_pir::ids::SymbolRef> {
             Some(sikuwa_pir::ids::SymbolRef::new(format!("{prefix}.{n}")))
         }
         _ => None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::analyze_module;
+    use std::collections::HashMap;
+
+    #[test]
+    fn sum_range_while_loop_converges() {
+        let path = format!(
+            "{}/../../tests/fixtures/sum_range.py",
+            env!("CARGO_MANIFEST_DIR")
+        );
+        let m = sikuwa_pir::lower_file(std::path::Path::new(&path)).unwrap();
+        let report = analyze_module(&m);
+        assert_eq!(report.module.functions.len(), 1);
+    }
+
+    #[test]
+    fn cfg_worklist_terminates_on_self_branch() {
+        use sikuwa_pir::ids::{BlockId, SymbolRef, ValueId};
+        use sikuwa_pir::module::{Block, FuncDef, Terminator};
+        use sikuwa_pir::span::Span;
+
+        let func = FuncDef {
+            symbol: SymbolRef::new("t.loop"),
+            params: vec!["i".into()],
+            locals: vec![],
+            cellvars: vec![],
+            nested: vec![],
+            return_value: None,
+            blocks: vec![Block {
+                id: BlockId::entry(),
+                phis: vec![],
+                ops: vec![],
+                term: Terminator::Branch {
+                    target: BlockId::entry(),
+                },
+            }],
+            span: Span::single_line("t.py", 1),
+            exception_regions: vec![],
+        };
+        let mut slots = SparseEnvironment::new();
+        slots.seed("i");
+        let mut values = HashMap::new();
+        run_func_body_cfg(
+            &func,
+            &mut slots,
+            &mut values,
+            &HashMap::new(),
+            &HashMap::new(),
+            |_, _, _, _, _, _| LogicalType::Int,
+        );
     }
 }

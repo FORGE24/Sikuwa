@@ -352,6 +352,7 @@ fn infer_op(
             }
         }
         OpCode::BinOpTrueDiv => LogicalType::Float,
+        OpCode::BinOpBitAnd | OpCode::BinOpRShift => LogicalType::Int,
         OpCode::UnaryNot
         | OpCode::CompareLt
         | OpCode::CompareLe
@@ -370,8 +371,14 @@ fn infer_op(
             }
             LogicalType::Dyn
         }
-        OpCode::LoadAttr | OpCode::SubscriptLoad | OpCode::MakeClosure | OpCode::BuildClass
-        | OpCode::GetIter | OpCode::ForIterNext => LogicalType::Dyn,
+        OpCode::LoadGlobal | OpCode::LoadAttr | OpCode::SubscriptLoad | OpCode::MakeClosure | OpCode::BuildClass
+        | OpCode::BuildTuple
+        | OpCode::BuildList
+        | OpCode::BuildMap
+        | OpCode::CallIndirect
+        | OpCode::CallBuiltin
+        | OpCode::GetIter
+        | OpCode::ForIterNext => LogicalType::Dyn,
         OpCode::CallExtern => {
             if let Some(OpOperand::Name(name)) = op.operands.first() {
                 if let Some(ext) = externs.get(name) {

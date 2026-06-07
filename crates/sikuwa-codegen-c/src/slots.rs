@@ -15,6 +15,9 @@ pub enum CodegenTier {
 }
 
 pub fn tier_for(stat: &FuncStat, func: &FuncDef) -> Option<CodegenTier> {
+    if crate::emit::func_has_unsupported_dyn_ops(func) {
+        return Some(CodegenTier::S3);
+    }
     if is_closure_factory(func) {
         return Some(CodegenTier::Closure);
     }

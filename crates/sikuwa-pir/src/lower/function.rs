@@ -56,7 +56,7 @@ pub struct FunctionLowerer {
     pub(crate) file_path: String,
     source: String,
     symbol: SymbolRef,
-    params: Vec<String>,
+    pub(crate) params: Vec<String>,
     span: Span,
     next_value: u32,
     next_block: u32,
@@ -66,16 +66,18 @@ pub struct FunctionLowerer {
     current_ops: Vec<Op>,
     block_sealed: bool,
     /// Current SSA bindings for Python local names (LogicalSlot).
-    locals: HashMap<String, ValueId>,
+    pub(crate) locals: HashMap<String, ValueId>,
     local_names: HashSet<String>,
     /// Free variables captured from enclosing scope (inner function only).
-    free_cells: HashSet<String>,
+    pub(crate) free_cells: HashSet<String>,
     /// Names promoted to cells in this function (for nested closures).
     cellvars: HashSet<String>,
     nested: Vec<FuncDef>,
-    module_name: String,
+    pub(crate) module_name: String,
     ctx: LowerContext,
     exception_regions: Vec<ExceptionRegion>,
+    loop_continue_target: Option<BlockId>,
+    loop_break_target: Option<BlockId>,
 }
 
 impl FunctionLowerer {
@@ -292,6 +294,13 @@ impl FunctionLowerer {
             ast::Stmt::FunctionDef(fd) => self.lower_nested_function(fd),
             ast::Stmt::Try(try_stmt) => self.lower_try(try_stmt),
             ast::Stmt::Pass(_) => Ok(()),
+            ast::Stmt::Continue(_) => {
+                let target = self.loop_continue_target.clone().ok_or_else(|| {
+                    SikuwaError::pir(format!("continue outside loop in {}", self.symbol))
+                })?;
+                self.seal(Terminator::Branch { target })?;
+                Ok(())
+            }
             ast::Stmt::Expr(expr) => {
                 if matches!(&*expr.value, ast::Expr::Constant(_)) {
                     Ok(())
@@ -307,46 +316,68 @@ impl FunctionLowerer {
         }
     }
 
-    /// Bare `try` / `except` with `return` bodies (exceptional-edge metadata).
+    /// `try` / `except` regions (exceptional-edge metadata; handlers may be unreachable in C).
     fn lower_try(&mut self, try_stmt: &ast::StmtTry) -> Result<()> {
         if !try_stmt.orelse.is_empty() || !try_stmt.finalbody.is_empty() {
             return Err(SikuwaError::pir(
                 "try/else and try/finally not supported yet",
             ));
         }
-        if try_stmt.handlers.len() != 1 {
-            return Err(SikuwaError::pir("only single except handler supported yet"));
-        }
-        let handler = match &try_stmt.handlers[0] {
-            ast::ExceptHandler::ExceptHandler(h) => h,
-        };
-        if handler.type_.is_some() || handler.name.is_some() {
-            return Err(SikuwaError::pir("only bare except supported yet"));
+        if try_stmt.handlers.len() == 1 {
+            let handler = match &try_stmt.handlers[0] {
+                ast::ExceptHandler::ExceptHandler(h) => h,
+            };
+            if handler.type_.is_none()
+                && handler.name.is_none()
+                && is_pass_only_body(&handler.body)
+            {
+                self.lower_stmts(&try_stmt.body)?;
+                return Ok(());
+            }
         }
 
         let protected_id = self.current_id.clone();
         self.lower_stmts(&try_stmt.body)?;
+        let after_try = self.fresh_block_id("after_try");
+        if !self.block_sealed {
+            self.seal(Terminator::Branch {
+                target: after_try.clone(),
+            })?;
+        }
 
-        let handler_id = self.fresh_block_id("except");
+        let handler_ids: Vec<BlockId> = (0..try_stmt.handlers.len())
+            .map(|i| self.fresh_block_id(&format!("except_{i}")))
+            .collect();
         self.exception_regions.push(ExceptionRegion {
             protected: vec![protected_id],
-            handlers: vec![handler_id.clone()],
+            handlers: handler_ids.clone(),
             finally: None,
         });
 
-        if !self.block_sealed {
-            return Err(SikuwaError::pir(
-                "try body must end with return (no fallthrough yet)",
-            ));
+        for (handler, handler_id) in try_stmt.handlers.iter().zip(handler_ids.iter()) {
+            let h = match handler {
+                ast::ExceptHandler::ExceptHandler(h) => h,
+            };
+            self.start_block(handler_id.clone());
+            if let Some(ex_name) = &h.name {
+                let exc = self.fresh_value();
+                self.emit(Op {
+                    opcode: OpCode::Const,
+                    result: Some(exc),
+                    operands: vec![OpOperand::Const(crate::module::ConstValue::None)],
+                    span: self.span_from(h),
+                });
+                self.store_local(&ex_name.to_string(), exc, self.span_from(h));
+            }
+            self.lower_stmts(&h.body)?;
+            if !self.block_sealed {
+                return Err(SikuwaError::pir(
+                    "except body must end with return (no fallthrough yet)",
+                ));
+            }
         }
 
-        self.start_block(handler_id);
-        self.lower_stmts(&handler.body)?;
-        if !self.block_sealed {
-            return Err(SikuwaError::pir(
-                "except body must end with return (no fallthrough yet)",
-            ));
-        }
+        self.start_block(after_try);
         Ok(())
     }
 
@@ -355,8 +386,66 @@ impl FunctionLowerer {
         if assign.targets.len() != 1 {
             return Err(SikuwaError::pir("multi-target assign not supported yet"));
         }
-        let value = lower_expr(self, &assign.value)?.into_value(self)?;
         match &assign.targets[0] {
+            ast::Expr::Tuple(tup_targets) => {
+                self.lower_tuple_unpack(&tup_targets.elts, &assign.value, span)
+            }
+            target => {
+                let value = lower_expr(self, &assign.value)?.into_value(self)?;
+                self.store_assign_target(target, value, span)
+            }
+        }
+    }
+
+    fn lower_tuple_unpack(
+        &mut self,
+        targets: &[ast::Expr],
+        value: &ast::Expr,
+        span: Span,
+    ) -> Result<()> {
+        if let ast::Expr::Tuple(val_tup) = value {
+            if targets.len() != val_tup.elts.len() {
+                return Err(SikuwaError::pir(format!(
+                    "tuple unpack length mismatch: {} targets, {} values",
+                    targets.len(),
+                    val_tup.elts.len()
+                )));
+            }
+            for (target, elt) in targets.iter().zip(val_tup.elts.iter()) {
+                let v = lower_expr(self, elt)?.into_value(self)?;
+                self.store_assign_target(target, v, span.clone())?;
+            }
+            return Ok(());
+        }
+
+        let tuple_val = lower_expr(self, value)?.into_value(self)?;
+        for (i, target) in targets.iter().enumerate() {
+            let idx_val = self.fresh_value();
+            self.emit(Op {
+                opcode: OpCode::Const,
+                result: Some(idx_val),
+                operands: vec![OpOperand::Const(crate::module::ConstValue::Int(i as i64))],
+                span: span.clone(),
+            });
+            let elem = self.fresh_value();
+            self.emit(Op {
+                opcode: OpCode::SubscriptLoad,
+                result: Some(elem),
+                operands: vec![OpOperand::Value(tuple_val), OpOperand::Value(idx_val)],
+                span: span.clone(),
+            });
+            self.store_assign_target(target, elem, span.clone())?;
+        }
+        Ok(())
+    }
+
+    fn store_assign_target(
+        &mut self,
+        target: &ast::Expr,
+        value: ValueId,
+        span: Span,
+    ) -> Result<()> {
+        match target {
             ast::Expr::Name(name) => {
                 self.store_local(&name.id.to_string(), value, span);
                 Ok(())
@@ -390,9 +479,7 @@ impl FunctionLowerer {
                 });
                 Ok(())
             }
-            _ => Err(SikuwaError::pir(
-                "unsupported assignment target",
-            )),
+            _ => Err(SikuwaError::pir("unsupported assignment target")),
         }
     }
 
@@ -488,7 +575,8 @@ impl FunctionLowerer {
         self.start_block(then_id.clone());
         self.lower_stmts(&if_stmt.body)?;
         let then_locals = self.locals.clone();
-        if !self.block_sealed {
+        let then_reaches_merge = !self.block_sealed;
+        if then_reaches_merge {
             self.seal(Terminator::Branch {
                 target: merge_id.clone(),
             })?;
@@ -509,16 +597,25 @@ impl FunctionLowerer {
             }
         }
         let else_locals = self.locals.clone();
+        let else_reaches_merge = !self.block_sealed;
 
         self.start_block(merge_id);
-        self.locals = self.merge_locals(
-            &pre_locals,
-            &then_locals,
-            &else_locals,
-            &then_id,
-            &else_id,
-            span,
-        );
+        self.locals = if then_reaches_merge && else_reaches_merge {
+            self.merge_locals(
+                &pre_locals,
+                &then_locals,
+                &else_locals,
+                &then_id,
+                &else_id,
+                span,
+            )
+        } else if then_reaches_merge {
+            then_locals
+        } else if else_reaches_merge {
+            else_locals
+        } else {
+            pre_locals
+        };
         Ok(())
     }
 
@@ -540,7 +637,11 @@ impl FunctionLowerer {
         })?;
 
         self.start_block(body_id);
+        let prev_cont = self.loop_continue_target.replace(header_id.clone());
+        let prev_break = self.loop_break_target.replace(exit_id.clone());
         self.lower_stmts(&while_stmt.body)?;
+        self.loop_continue_target = prev_cont;
+        self.loop_break_target = prev_break;
         if !self.block_sealed {
             self.seal(Terminator::Branch {
                 target: header_id,
@@ -606,17 +707,40 @@ impl FunctionLowerer {
         })?;
 
         self.start_block(body_id);
+        let prev_cont = self.loop_continue_target.replace(header_id.clone());
+        let prev_break = self.loop_break_target.replace(exit_id.clone());
         match &*for_stmt.target {
             ast::Expr::Name(name) => {
                 self.store_local(&name.id.to_string(), item, span.clone());
             }
+            ast::Expr::Tuple(tup) => {
+                for (i, target) in tup.elts.iter().enumerate() {
+                    let idx_val = self.fresh_value();
+                    self.emit(Op {
+                        opcode: OpCode::Const,
+                        result: Some(idx_val),
+                        operands: vec![OpOperand::Const(crate::module::ConstValue::Int(i as i64))],
+                        span: span.clone(),
+                    });
+                    let elem = self.fresh_value();
+                    self.emit(Op {
+                        opcode: OpCode::SubscriptLoad,
+                        result: Some(elem),
+                        operands: vec![OpOperand::Value(item), OpOperand::Value(idx_val)],
+                        span: span.clone(),
+                    });
+                    self.store_assign_target(target, elem, span.clone())?;
+                }
+            }
             _ => {
                 return Err(SikuwaError::pir(
-                    "for-loop target must be a simple name",
+                    "for-loop target must be a name or tuple unpack",
                 ))
             }
         }
         self.lower_stmts(&for_stmt.body)?;
+        self.loop_continue_target = prev_cont;
+        self.loop_break_target = prev_break;
         if !self.block_sealed {
             self.seal(Terminator::Branch {
                 target: header_id,
@@ -634,6 +758,11 @@ impl FunctionLowerer {
         right: &ast::Expr,
         span: Span,
     ) -> Result<LowerExprResult> {
+        if matches!(op, ast::Operator::Mult) {
+            if let Some(s) = fold_str_repeat(left, right) {
+                return Ok(LowerExprResult::Const(crate::module::ConstValue::Str(s)));
+            }
+        }
         let lhs = lower_expr(self, left)?.into_value(self)?;
         let rhs = lower_expr(self, right)?.into_value(self)?;
         let opcode = match op {
@@ -643,6 +772,8 @@ impl FunctionLowerer {
             ast::Operator::Div => OpCode::BinOpTrueDiv,
             ast::Operator::FloorDiv => OpCode::BinOpFloorDiv,
             ast::Operator::Mod => OpCode::BinOpMod,
+            ast::Operator::BitAnd => OpCode::BinOpBitAnd,
+            ast::Operator::RShift => OpCode::BinOpRShift,
             other => {
                 return Err(SikuwaError::pir(format!(
                     "unsupported binop: {other:?}"
@@ -709,7 +840,9 @@ impl FunctionLowerer {
         let (opcode, callee) = match &*call.func {
             ast::Expr::Name(name) => {
                 let n = name.id.to_string();
-                if self.ctx.externs.contains_key(&n) {
+                if matches!(n.as_str(), "range" | "print" | "float" | "str") {
+                    (OpCode::CallBuiltin, OpOperand::Name(n))
+                } else if self.ctx.externs.contains_key(&n) {
                     (
                         OpCode::CallExtern,
                         OpOperand::Name(n),
@@ -733,25 +866,61 @@ impl FunctionLowerer {
                             .get(&local)
                             .ok_or_else(|| SikuwaError::pir(format!("unknown module `{local}`")))?;
                         let sym = format!("{mod_path}.{}", attr.attr);
-                        (
-                            OpCode::Call,
-                            OpOperand::Symbol(SymbolRef::new(sym)),
-                        )
-                    } else {
-                        return Err(SikuwaError::pir(
-                            "only imported-module attribute calls supported",
-                        ));
+                        let mut operands = vec![OpOperand::Symbol(SymbolRef::new(sym))];
+                        for arg in &call.args {
+                            let v = lower_expr(self, arg)?.into_value(self)?;
+                            operands.push(OpOperand::Value(v));
+                        }
+                        let result = self.fresh_value();
+                        self.emit(Op {
+                            opcode: OpCode::Call,
+                            result: Some(result),
+                            operands,
+                            span,
+                        });
+                        return Ok(LowerExprResult::Value(result));
                     }
-                } else {
-                    return Err(SikuwaError::pir(
-                        "only direct name or module.attr calls supported yet",
-                    ));
                 }
+                let obj = lower_expr(self, &attr.value)?.into_value(self)?;
+                let method = self.fresh_value();
+                self.emit(Op {
+                    opcode: OpCode::LoadAttr,
+                    result: Some(method),
+                    operands: vec![
+                        OpOperand::Value(obj),
+                        OpOperand::Name(attr.attr.to_string()),
+                    ],
+                    span: span.clone(),
+                });
+                let mut operands = vec![OpOperand::Value(method)];
+                for arg in &call.args {
+                    let v = lower_expr(self, arg)?.into_value(self)?;
+                    operands.push(OpOperand::Value(v));
+                }
+                let result = self.fresh_value();
+                self.emit(Op {
+                    opcode: OpCode::CallIndirect,
+                    result: Some(result),
+                    operands,
+                    span,
+                });
+                return Ok(LowerExprResult::Value(result));
             }
             _ => {
-                return Err(SikuwaError::pir(
-                    "only direct name calls supported yet",
-                ))
+                let callee_val = lower_expr(self, &call.func)?.into_value(self)?;
+                let mut operands = vec![OpOperand::Value(callee_val)];
+                for arg in &call.args {
+                    let v = lower_expr(self, arg)?.into_value(self)?;
+                    operands.push(OpOperand::Value(v));
+                }
+                let result = self.fresh_value();
+                self.emit(Op {
+                    opcode: OpCode::CallIndirect,
+                    result: Some(result),
+                    operands,
+                    span,
+                });
+                return Ok(LowerExprResult::Value(result));
             }
         };
         let mut operands = vec![callee];
@@ -778,6 +947,7 @@ fn aug_op_to_opcode(op: ast::Operator) -> Result<OpCode> {
         ast::Operator::Div => OpCode::BinOpTrueDiv,
         ast::Operator::FloorDiv => OpCode::BinOpFloorDiv,
         ast::Operator::Mod => OpCode::BinOpMod,
+        ast::Operator::RShift => OpCode::BinOpRShift,
         other => {
             return Err(SikuwaError::pir(format!(
                 "unsupported augassign op: {other:?}"
@@ -834,6 +1004,8 @@ pub fn lower_function(
         module_name: module_name.to_string(),
         ctx: ctx.clone(),
         exception_regions: Vec::new(),
+        loop_continue_target: None,
+        loop_break_target: None,
     };
 
     for p in &params {
@@ -990,6 +1162,33 @@ fn collect_expr_loads(expr: &ast::Expr, out: &mut HashSet<String>) {
         ast::Expr::Constant(_) => {}
         _ => {}
     }
+}
+
+fn is_pass_only_body(body: &[ast::Stmt]) -> bool {
+    body.is_empty()
+        || (body.len() == 1 && matches!(body[0], ast::Stmt::Pass(_)))
+}
+
+fn fold_str_repeat(left: &ast::Expr, right: &ast::Expr) -> Option<String> {
+    use num_traits::ToPrimitive;
+    let (s, n) = match (left, right) {
+        (ast::Expr::Constant(l), ast::Expr::Constant(r)) => {
+            let ls = match &l.value {
+                ast::Constant::Str(s) => s.as_str(),
+                _ => return None,
+            };
+            let n = match &r.value {
+                ast::Constant::Int(i) => i.to_i64()?,
+                _ => return None,
+            };
+            (ls, n)
+        }
+        _ => return None,
+    };
+    if n < 0 {
+        return None;
+    }
+    Some(s.repeat(n as usize))
 }
 
 pub fn line_at_offset(source: &str, offset: rustpython_ast::text_size::TextSize) -> u32 {

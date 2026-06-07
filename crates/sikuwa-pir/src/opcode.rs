@@ -11,6 +11,8 @@ pub enum OpCode {
     BinOpTrueDiv = 4,
     BinOpFloorDiv = 5,
     BinOpMod = 6,
+    BinOpBitAnd = 7,
+    BinOpRShift = 8,
     UnaryNeg = 10,
     UnaryNot = 11,
 
@@ -43,11 +45,13 @@ pub enum OpCode {
     CallBuiltin = 61,
     CallExtern = 62,
     MakeClosure = 63,
+    CallIndirect = 64,
 
     // Constants / building
     Const = 80,
     BuildTuple = 81,
     BuildList = 82,
+    BuildMap = 83,
     BuildClass = 84,
 
     // Control / iteration
@@ -71,6 +75,8 @@ impl OpCode {
             Self::BinOpTrueDiv => "binop_truediv",
             Self::BinOpFloorDiv => "binop_floordiv",
             Self::BinOpMod => "binop_mod",
+            Self::BinOpBitAnd => "binop_bitand",
+            Self::BinOpRShift => "binop_rshift",
             Self::UnaryNeg => "unary_neg",
             Self::UnaryNot => "unary_not",
             Self::CompareLt => "compare_lt",
@@ -95,9 +101,11 @@ impl OpCode {
             Self::CallBuiltin => "call_builtin",
             Self::CallExtern => "call_extern",
             Self::MakeClosure => "make_closure",
+            Self::CallIndirect => "call_indirect",
             Self::Const => "const",
             Self::BuildTuple => "build_tuple",
             Self::BuildList => "build_list",
+            Self::BuildMap => "build_map",
             Self::BuildClass => "build_class",
             Self::GetIter => "get_iter",
             Self::ForIterNext => "for_iter_next",

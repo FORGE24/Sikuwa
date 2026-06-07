@@ -143,6 +143,11 @@ pub fn emit_module_c(pir: &Module, report: &PystatReport, opts: &CodegenOptions)
         .collect();
 
     for func in pir.functions.iter().filter(|f| is_closure_factory(f)) {
+        if func_has_unsupported_dyn_ops(func)
+            || func.nested.iter().any(|n| func_has_unsupported_dyn_ops(n))
+        {
+            continue;
+        }
         emit_nested_impls(func, &mut out);
     }
 
@@ -226,8 +231,11 @@ fn emit_func_c(
     func_stats: &HashMap<String, FuncStat>,
     out: &mut String,
 ) {
-    if tier == CodegenTier::S3 && func_has_unsupported_dyn_ops(func) {
-        emit_func_s3_stub(func, stat, out);
+    if func_has_unsupported_dyn_ops(func)
+        || (is_closure_factory(func)
+            && func.nested.iter().any(|n| func_has_unsupported_dyn_ops(n)))
+    {
+        emit_func_s3_stub(func, stat, tier, out);
         return;
     }
     let params = emit_params(stat, func, tier);
@@ -296,34 +304,48 @@ fn emit_func_c(
     let _ = writeln!(out, "}}");
 }
 
-fn func_has_unsupported_dyn_ops(func: &FuncDef) -> bool {
+pub(crate) fn func_has_unsupported_dyn_ops(func: &FuncDef) -> bool {
     func.blocks.iter().flat_map(|b| &b.ops).any(|op| {
         matches!(
             op.opcode,
-            OpCode::LoadAttr
-                | OpCode::StoreAttr
+            OpCode::LoadGlobal
+                | OpCode::LoadAttr
                 | OpCode::SubscriptLoad
                 | OpCode::SubscriptStore
-                | OpCode::MakeClosure
+                | OpCode::BuildTuple
+                | OpCode::BuildList
+                | OpCode::BuildMap
+                | OpCode::CallIndirect
+                | OpCode::CallBuiltin
                 | OpCode::BuildClass
         )
     })
 }
 
-fn emit_func_s3_stub(func: &FuncDef, stat: &FuncStat, out: &mut String) {
-    let params = emit_params(stat, func, CodegenTier::S3);
+fn emit_func_s3_stub(func: &FuncDef, stat: &FuncStat, tier: CodegenTier, out: &mut String) {
+    let params = emit_params(stat, func, tier);
     let _ = writeln!(
         out,
         "SKW_API {} {}({}) {{",
-        return_c_type(stat, CodegenTier::S3, func),
-        skw_c_symbol_dyn(&func.symbol.0),
+        return_c_type(stat, tier, func),
+        export_c_symbol(&func.symbol.0, tier),
         params.join(", ")
     );
     for p in &func.params {
         let _ = writeln!(out, "  (void){};", sanitize(p));
     }
-    let _ = writeln!(out, "  /* dyn: unsupported IR in Plan 8b stub */");
-    let _ = writeln!(out, "  return skw_value_from_i64(0);");
+    let _ = writeln!(out, "  /* dyn: unsupported IR stub */");
+    match tier {
+        CodegenTier::S3 => {
+            let _ = writeln!(out, "  return skw_value_from_i64(0);");
+        }
+        CodegenTier::Closure => {
+            let _ = writeln!(out, "  return 0;");
+        }
+        _ => {
+            let _ = writeln!(out, "  return 0;");
+        }
+    }
     let _ = writeln!(out, "}}");
 }
 
@@ -503,6 +525,8 @@ fn emit_op_expr(
         OpCode::BinOpTrueDiv => format!("(double){} / (double){}", val(0), val(1)),
         OpCode::BinOpFloorDiv => format!("{} / {}", val(0), val(1)),
         OpCode::BinOpMod => format!("{} % {}", val(0), val(1)),
+        OpCode::BinOpBitAnd => format!("{} & {}", val(0), val(1)),
+        OpCode::BinOpRShift => format!("{} >> {}", val(0), val(1)),
         OpCode::UnaryNeg => format!("-{}", val(0)),
         OpCode::UnaryNot => format!("!{}", val(0)),
         OpCode::CompareLt => format!("{} < {}", val(0), val(1)),
@@ -540,15 +564,82 @@ fn emit_op_expr(
             let raw_args: Vec<String> = (1..op.operands.len()).map(|i| val(i)).collect();
             match op.operands.first() {
                 Some(OpOperand::Symbol(sym)) => {
+                    if sym.0 == "time.perf_counter" {
+                        return "skw_time_perf_counter()".into();
+                    }
+                    if sym.0 == "sys.setrecursionlimit" {
+                        let args = format_call_args(None, raw_args);
+                        return format!("(void)skw_sys_setrecursionlimit({})", args.join(", "));
+                    }
                     let callee = ctx.func_stats.get(&sym.0);
                     let args = format_call_args(callee, raw_args);
                     format!("{}({})", skw_c_symbol(&sym.0), args.join(", "))
                 }
-                Some(OpOperand::Name(n)) => format!("{}({})", sanitize(n), raw_args.join(", ")),
+                Some(OpOperand::Name(n)) => {
+                    let module_prefix = ctx
+                        .func
+                        .symbol
+                        .0
+                        .rsplit_once('.')
+                        .map(|(m, _)| m)
+                        .unwrap_or("");
+                    let candidate = format!("{module_prefix}.{n}");
+                    if ctx.func_stats.contains_key(&candidate) {
+                        let callee = ctx.func_stats.get(&candidate);
+                        let args = format_call_args(callee, raw_args);
+                        format!("{}({})", skw_c_symbol(&candidate), args.join(", "))
+                    } else {
+                        format!("{}({})", sanitize(n), raw_args.join(", "))
+                    }
+                }
                 _ => "0".into(),
             }
         }
+        OpCode::CallBuiltin => emit_call_builtin(op, &val),
+        OpCode::CallIndirect => {
+            let callee = val(0);
+            let args: Vec<String> = (1..op.operands.len()).map(|i| val(i)).collect();
+            format!(
+                "skw_call_indirect_i64({}, {})",
+                callee,
+                args.first().cloned().unwrap_or_else(|| "0".into())
+            )
+        }
+        OpCode::LoadGlobal => {
+            if let Some(OpOperand::Symbol(sym)) = op.operands.first() {
+                format!("skw_fn_ref(\"{}\")", sym.0)
+            } else {
+                "0".into()
+            }
+        }
         _ => "0".into(),
+    }
+}
+
+fn emit_call_builtin(op: &Op, val: &dyn Fn(usize) -> String) -> String {
+    let Some(OpOperand::Name(name)) = op.operands.first() else {
+        return "0".into();
+    };
+    let args: Vec<String> = (1..op.operands.len()).map(|i| val(i)).collect();
+    match name.as_str() {
+        "range" => format!("skw_builtin_range({})", args.join(", ")),
+        "print" => {
+            if args.is_empty() {
+                "(void)0".into()
+            } else {
+                format!("(void)skw_builtin_print({})", args.join(", "))
+            }
+        }
+        "float" => {
+            if args.len() == 1 && args[0].starts_with('"') {
+                format!("skw_builtin_float_str({})", args[0])
+            } else {
+                format!("skw_builtin_float({})", args.join(", "))
+            }
+        }
+        "str" => format!("skw_builtin_str({})", args.join(", ")),
+        "skw_py_joined_str" => format!("skw_py_joined_str({})", args.join(", ")),
+        _ => format!("skw_builtin_{}({})", sanitize(name), args.join(", ")),
     }
 }
 

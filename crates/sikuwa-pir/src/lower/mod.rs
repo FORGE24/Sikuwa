@@ -214,6 +214,69 @@ def make_adder(n):
     }
 
     #[test]
+    fn lower_tuple_unpack() {
+        let src = include_str!("../../../../tests/fixtures/tuple_unpack.py");
+        let module = lower_source(src, "tuple_unpack.py").unwrap();
+        assert_eq!(module.functions.len(), 2);
+        let swap = &module.functions[0];
+        assert!(!swap.blocks.iter().flat_map(|b| &b.ops).any(|o| {
+            o.opcode == crate::opcode::OpCode::BuildTuple
+        }));
+        let fib = &module.functions[1];
+        assert!(!fib.blocks.iter().flat_map(|b| &b.ops).any(|o| {
+            o.opcode == crate::opcode::OpCode::BuildTuple
+        }));
+        let report = verify_module(&module);
+        assert!(report.ok(), "{:?}", report.errors);
+    }
+
+    #[test]
+    fn lower_list_literal() {
+        let src = include_str!("../../../../tests/fixtures/list_literal.py");
+        let module = lower_source(src, "list_literal.py").unwrap();
+        assert_eq!(module.functions.len(), 2);
+        assert!(module.functions[0].blocks.iter().flat_map(|b| &b.ops).any(|o| {
+            o.opcode == crate::opcode::OpCode::BuildList
+        }));
+        let report = verify_module(&module);
+        assert!(report.ok(), "{:?}", report.errors);
+    }
+
+    #[test]
+    fn lower_feb_core() {
+        let src = include_str!("../../../../tests/feb/feb_core.py");
+        let module = lower_source(src, "feb_core.py").unwrap();
+        assert_eq!(module.functions.len(), 2);
+        let report = verify_module(&module);
+        assert!(report.ok(), "{:?}", report.errors);
+    }
+
+    #[test]
+    fn lower_feb_py() {
+        let path = format!(
+            "{}/../../tests/feb/feb.py",
+            env!("CARGO_MANIFEST_DIR")
+        );
+        let module = lower_file(std::path::Path::new(&path)).unwrap();
+        assert!(module.functions.len() >= 6, "expected feb functions");
+        let report = verify_module(&module);
+        assert!(report.ok(), "{:?}", report.errors);
+    }
+
+    #[test]
+    fn lower_tuple_expression() {
+        let src = r#"def pair():
+    return (1, 2)
+"#;
+        let module = lower_source(src, "pair.py").unwrap();
+        assert!(module.functions[0].blocks.iter().flat_map(|b| &b.ops).any(|o| {
+            o.opcode == crate::opcode::OpCode::BuildTuple
+        }));
+        let report = verify_module(&module);
+        assert!(report.ok(), "{:?}", report.errors);
+    }
+
+    #[test]
     fn lower_c_extern_and_import() {
         let ext = include_str!("../../../../tests/fixtures/plan5_extern.py");
         let m = lower_source(ext, "plan5_extern.py").unwrap();

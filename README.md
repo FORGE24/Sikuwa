@@ -65,4 +65,4 @@ cargo run -- validate -c sikuwa.a2.toml
 
 ## 许可证
 
-MIT — 见 [LICENSE](LICENSE)
+GPL v3 — 见 [LICENSE](LICENSE)（[中文参考译文](LICENSE.CHINESE)）

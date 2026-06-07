@@ -1,0 +1,40 @@
+{
+  "manifest_version": "1.0",
+  "abi": "1.0",
+  "module": "plan7_pep484",
+  "source_hash": "37f9929c4b88ee1249cd2f5a4334914ff1711b00ff5341437a464c766cd4f209",
+  "exports": [
+    {
+      "symbol": "plan7_pep484.scale",
+      "c_symbol": "skw_plan7_pep484_scale",
+      "slot": "S0",
+      "signature": {
+        "params": [
+          {
+            "name": "x",
+            "type": "int64"
+          },
+          {
+            "name": "factor",
+            "type": "int64"
+          }
+        ],
+        "return_type": "int64"
+      },
+      "static_eligible": true
+    }
+  ],
+  "imports": [],
+  "itr_slots": [
+    {
+      "logical": "x",
+      "physical": "int64",
+      "strategy": "itr"
+    },
+    {
+      "logical": "factor",
+      "physical": "int64",
+      "strategy": "itr"
+    }
+  ]
+}

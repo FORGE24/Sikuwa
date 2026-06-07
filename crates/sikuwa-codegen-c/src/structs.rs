@@ -6,14 +6,14 @@ use std::fmt::Write;
 use sikuwa_pir::module::{ClassDef, FuncDef, Module, OpOperand};
 use sikuwa_pir::OpCode;
 
-use crate::emit::{module_c_name, skw_c_symbol};
+use crate::closure::emit_closure_structs;
 
 pub fn emit_structs_h(pir: &Module, out: &mut String) {
     for class in &pir.classes {
         emit_class_struct(class, out);
     }
     for func in &pir.functions {
-        emit_nested_closure_structs(func, out);
+        emit_closure_structs(func, out);
     }
 }
 
@@ -52,39 +52,8 @@ fn collect_self_fields(func: &FuncDef, fields: &mut HashSet<String>) {
     }
 }
 
-fn emit_nested_closure_structs(parent: &FuncDef, out: &mut String) {
-    for nested in &parent.nested {
-        if nested.cellvars.is_empty() {
-            continue;
-        }
-        let base = closure_base_name(&parent.symbol.0, &nested.symbol.0);
-        let env_name = format!("{base}_env");
-        let _ = writeln!(out, "typedef struct {env_name} {{");
-        for cell in &nested.cellvars {
-            let _ = writeln!(out, "    int64_t {cell};");
-        }
-        let _ = writeln!(out, "}} {env_name}_t;");
-        let fn_sym = skw_c_symbol(&nested.symbol.0);
-        let _ = writeln!(
-            out,
-            "typedef int64_t (SKW_CALL *{base}_fn_t)({env_name}_t *env, int64_t x);"
-        );
-        let _ = writeln!(
-            out,
-            "typedef struct {base}_closure {{\n    {env_name}_t env;\n    {base}_fn_t fn;\n}} {base}_closure_t;\n"
-        );
-        let _ = fn_sym; // nested fn symbol reserved for future codegen wiring
-    }
-}
-
 fn class_struct_name(class_symbol: &str) -> String {
     format!("skw_{}", class_symbol.replace('.', "_"))
-}
-
-fn closure_base_name(parent_sym: &str, nested_sym: &str) -> String {
-    let parent = skw_c_symbol(parent_sym);
-    let nested_name = nested_sym.rsplit('.').next().unwrap_or("inner");
-    format!("{parent}_{nested_name}")
 }
 
 #[cfg(test)]
@@ -100,5 +69,20 @@ mod tests {
         emit_structs_h(&pir, &mut out);
         assert!(out.contains("skw_plan3_Point"));
         assert!(out.contains("int64_t x"));
+    }
+
+    #[test]
+    fn emits_closure_struct() {
+        let src = include_str!("../../../tests/fixtures/plan3.py");
+        let pir = lower_source(src, "plan3.py").unwrap();
+        let make_adder = pir
+            .functions
+            .iter()
+            .find(|f| f.symbol.0.ends_with("make_adder"))
+            .unwrap();
+        let mut out = String::new();
+        emit_closure_structs(make_adder, &mut out);
+        assert!(out.contains("skw_plan3_make_adder_add_env_t"));
+        assert!(out.contains("skw_plan3_make_adder_add_closure_t"));
     }
 }

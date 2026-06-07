@@ -656,7 +656,7 @@ checksum = "f8fadd59c855ef2080decdef8ff161eb6661b86933c9d82e5ba29dc602a55aba"
 
 [[package]]
 name = "sikuwa-cli"
-version = "2.0.0-alpha.1"
+version = "2.0.0-beta.1"
 dependencies = [
  "clap",
  "sikuwa-codegen-c",
@@ -669,18 +669,19 @@ dependencies = [
 
 [[package]]
 name = "sikuwa-codegen-c"
-version = "2.0.0-alpha.1"
+version = "2.0.0-beta.1"
 dependencies = [
  "serde",
  "serde_json",
  "sikuwa-core",
+ "sikuwa-link",
  "sikuwa-pir",
  "sikuwa-pystat",
 ]
 
 [[package]]
 name = "sikuwa-config"
-version = "2.0.0-alpha.1"
+version = "2.0.0-beta.1"
 dependencies = [
  "serde",
  "sikuwa-core",
@@ -689,7 +690,7 @@ dependencies = [
 
 [[package]]
 name = "sikuwa-core"
-version = "2.0.0-alpha.1"
+version = "2.0.0-beta.1"
 dependencies = [
  "serde",
  "thiserror",
@@ -697,14 +698,14 @@ dependencies = [
 
 [[package]]
 name = "sikuwa-link"
-version = "2.0.0-alpha.1"
+version = "2.0.0-beta.1"
 dependencies = [
  "sikuwa-core",
 ]
 
 [[package]]
 name = "sikuwa-pir"
-version = "2.0.0-alpha.1"
+version = "2.0.0-beta.1"
 dependencies = [
  "blake3",
  "num-traits",
@@ -718,7 +719,7 @@ dependencies = [
 
 [[package]]
 name = "sikuwa-pystat"
-version = "2.0.0-alpha.1"
+version = "2.0.0-beta.1"
 dependencies = [
  "blake3",
  "serde",

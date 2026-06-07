@@ -18,6 +18,17 @@ pub struct SkwManifest {
     pub exports: Vec<SkwExport>,
     pub imports: Vec<crate::imports::SkwImport>,
     pub itr_slots: Vec<SkwItrSlot>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub tagged_slots: Vec<SkwTaggedSlot>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct SkwTaggedSlot {
+    pub function: String,
+    pub name: String,
+    pub level: String,
+    pub physical: String,
+    pub tagged_arms: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -27,6 +38,13 @@ pub struct SkwExport {
     pub slot: String,
     pub signature: SkwSignature,
     pub static_eligible: bool,
+    /// Intentional ABI break vs prior manifest (RFC native-c-ffi).
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub abi_breaking: bool,
+}
+
+fn is_false(v: &bool) -> bool {
+    !*v
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -52,14 +70,16 @@ pub struct SkwItrSlot {
 pub fn emit_manifest(pir: &Module, report: &PystatReport) -> SkwManifest {
     let mut exports = Vec::new();
     let mut itr_slots = Vec::new();
+    let mut tagged_slots = Vec::new();
     let mut seen_itr = std::collections::HashSet::new();
+    let mut seen_tagged = std::collections::HashSet::new();
 
     for f in &report.module.functions {
-        if !f.static_eligible {
-            continue;
+        if f.static_eligible {
+            exports.push(func_to_export(f));
         }
-        exports.push(func_to_export(f));
         collect_itr(f, &mut itr_slots, &mut seen_itr);
+        collect_tagged(f, &mut tagged_slots, &mut seen_tagged);
     }
 
     SkwManifest {
@@ -70,11 +90,22 @@ pub fn emit_manifest(pir: &Module, report: &PystatReport) -> SkwManifest {
         exports,
         imports: collect_manifest_imports(pir),
         itr_slots,
+        tagged_slots,
     }
 }
 
 pub fn manifest_to_json(manifest: &SkwManifest) -> String {
     serde_json::to_string_pretty(manifest).expect("manifest json")
+}
+
+pub fn load_manifest(path: &std::path::Path) -> Result<SkwManifest, String> {
+    let text = std::fs::read_to_string(path).map_err(|e| e.to_string())?;
+    serde_json::from_str(&text).map_err(|e| e.to_string())
+}
+
+/// Load golden baseline manifest (alias for CI preset).
+pub fn load_baseline_manifest(path: &std::path::Path) -> Result<SkwManifest, String> {
+    load_manifest(path)
 }
 
 fn func_to_export(f: &FuncStat) -> SkwExport {
@@ -94,6 +125,7 @@ fn func_to_export(f: &FuncStat) -> SkwExport {
             return_type: physical_type_str(f.return_ty),
         },
         static_eligible: f.static_eligible,
+        abi_breaking: false,
     }
 }
 
@@ -116,7 +148,37 @@ fn collect_itr(
     }
 }
 
-fn slot_level_str(f: &FuncStat) -> &'static str {
+fn collect_tagged(
+    f: &FuncStat,
+    out: &mut Vec<SkwTaggedSlot>,
+    seen: &mut std::collections::HashSet<String>,
+) {
+    for slot in f.params.iter().chain(f.locals.iter()) {
+        if let Some(tagged) = &slot.tagged {
+            let key = format!("{}:{}", f.symbol.0, slot.name);
+            if seen.insert(key) {
+                out.push(SkwTaggedSlot {
+                    function: f.symbol.0.clone(),
+                    name: slot.name.clone(),
+                    level: slot_level_label(slot.level).to_string(),
+                    physical: physical_type_str(slot.ty),
+                    tagged_arms: tagged.arms.clone(),
+                });
+            }
+        }
+    }
+}
+
+fn slot_level_label(level: SlotLevel) -> &'static str {
+    match level {
+        SlotLevel::S0 => "S0",
+        SlotLevel::S1 => "S1",
+        SlotLevel::S2 => "S2",
+        SlotLevel::S3 => "S3",
+    }
+}
+
+pub fn slot_level_str(f: &FuncStat) -> &'static str {
     if f.static_eligible {
         "S0"
     } else if f.params.iter().chain(f.locals.iter()).any(|s| s.level == SlotLevel::S3) {
@@ -155,6 +217,9 @@ mod tests {
         let report = analyze_module(&pir);
         let m = emit_manifest(&pir, &report);
         assert_eq!(m.exports[0].c_symbol, "skw_sample_add");
-        assert!(manifest_to_json(&m).contains("itr"));
+        assert!(!m.exports[0].abi_breaking);
+        let json = manifest_to_json(&m);
+        assert!(json.contains("itr"));
+        assert!(!json.contains("abi_breaking"));
     }
 }

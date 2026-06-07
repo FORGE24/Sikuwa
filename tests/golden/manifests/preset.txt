@@ -1,0 +1,4 @@
+# CI preset: PyStat verify + golden manifest baseline
+tests/fixtures/add.py
+tests/fixtures/plan7_types.py
+tests/fixtures/plan7_pep484.py

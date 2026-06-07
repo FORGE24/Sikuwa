@@ -33,4 +33,8 @@ impl SikuwaError {
     pub fn pir(msg: impl Into<String>) -> Self {
         Self::Pir(msg.into())
     }
+
+    pub fn pystat(msg: impl Into<String>) -> Self {
+        Self::Pystat(msg.into())
+    }
 }

@@ -5,6 +5,9 @@ mod class;
 mod expr;
 mod function;
 mod import;
+mod pep484;
+mod type_directive;
+mod type_evidence;
 
 use std::path::Path;
 
@@ -18,6 +21,7 @@ use class::lower_class;
 use c_extern::parse_directives;
 use function::lower_function;
 use import::{import_map, lower_import, module_locals};
+use type_evidence::collect_type_hints;
 use function::LowerContext;
 
 /// Lower Python source to a PIR `Module`.
@@ -34,6 +38,7 @@ pub fn lower_source(source: &str, file_path: &str) -> Result<Module> {
         .to_string();
 
     let (externs, c_includes) = parse_directives(source)?;
+    let type_hints = collect_type_hints(source, file_path, &body)?;
     let mut imports: Vec<ModuleImport> = Vec::new();
     let mut functions = Vec::new();
     let mut classes = Vec::new();
@@ -92,6 +97,7 @@ pub fn lower_source(source: &str, file_path: &str) -> Result<Module> {
         externs,
         imports,
         c_includes,
+        type_hints,
     })
 }
 

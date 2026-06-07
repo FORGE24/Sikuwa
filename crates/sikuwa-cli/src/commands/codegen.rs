@@ -5,11 +5,15 @@ use std::path::PathBuf;
 
 use clap::Subcommand;
 use sikuwa_codegen_c::{
-    emit_manifest, emit_module_c, emit_module_h, emit_pywrap_c, manifest_to_json, CodegenOptions,
+    abi_guard_error, annotate_abi_breaks, check_abi_guard, emit_manifest, emit_module_c,
+    emit_module_h, emit_pywrap_c, load_manifest, manifest_to_json, CodegenOptions,
+    run_compile_pipeline_with_options, PipelineMode,
 };
 use sikuwa_core::Result;
 use sikuwa_pir::lower_file;
-use sikuwa_pystat::analyze_module;
+use sikuwa_pir::{verify_module, OptLevel};
+
+use crate::config_util::load_pystat_options;
 
 #[derive(Subcommand)]
 pub enum CodegenCommands {
@@ -32,6 +36,21 @@ pub enum CodegenCommands {
         /// Emit `{module}_pywrap.c` (CPython extension)
         #[arg(long)]
         python_shim: bool,
+        /// Run golden pipeline: PIR O1 → HPGI → PIR O2 (default when `--opt`)
+        #[arg(long)]
+        opt: bool,
+        /// Single-pass PIR opt only (skip O1→HPGI→O2); use with `--opt`
+        #[arg(long)]
+        single_pass: bool,
+        /// Optimization level for `--single-pass` (O1, O2)
+        #[arg(long, default_value = "O2")]
+        opt_level: String,
+        /// Allow breaking FFI ABI changes vs existing `{stem}.skw.json`
+        #[arg(long)]
+        allow_abi_break: bool,
+        /// Path to `sikuwa.toml` for `[sikuwa.pystat]` (default: search cwd)
+        #[arg(short, long)]
+        config: Option<PathBuf>,
     },
 }
 
@@ -54,9 +73,47 @@ fn run_inner(cmd: CodegenCommands) -> Result<()> {
             no_module_desc,
             no_structs,
             python_shim,
+            opt,
+            single_pass,
+            opt_level,
+            allow_abi_break,
+            config,
         } => {
-            let pir = lower_file(&input)?;
-            let report = analyze_module(&pir);
+            let pystat = load_pystat_options(config.as_deref());
+            let mut pir = lower_file(&input)?;
+            let level = if opt {
+                OptLevel::parse(&opt_level).ok_or_else(|| {
+                    sikuwa_core::SikuwaError::pir(format!(
+                        "unknown opt level {opt_level:?} (use O1, O2)"
+                    ))
+                })?
+            } else {
+                OptLevel::O2
+            };
+            let mode = PipelineMode::from_opt_flags(opt, single_pass, level);
+            let (report, pipe) = run_compile_pipeline_with_options(&mut pir, mode, &pystat)?;
+            if pipe.total_pass_changes() > 0 {
+                match pipe.mode {
+                    sikuwa_codegen_c::PipelineModeLabel::Golden => println!(
+                        "[pipeline] golden O1→HPGI→O2: {} pass change(s) (O1={}, O2={})",
+                        pipe.total_pass_changes(),
+                        pipe.opt_o1.as_ref().map(|r| r.changed_passes()).unwrap_or(0),
+                        pipe.opt_o2.as_ref().map(|r| r.changed_passes()).unwrap_or(0),
+                    ),
+                    sikuwa_codegen_c::PipelineModeLabel::SinglePass => println!(
+                        "[pipeline] single-pass {:?}: {} pass change(s)",
+                        level,
+                        pipe.total_pass_changes()
+                    ),
+                    _ => {}
+                }
+            }
+            if !opt {
+                let v = verify_module(&pir);
+                if !v.ok() {
+                    return Err(sikuwa_core::SikuwaError::pir(v.errors.join("; ")));
+                }
+            }
             let opts = CodegenOptions {
                 emit_module_desc: !no_module_desc,
                 emit_structs: !no_structs,
@@ -78,8 +135,16 @@ fn run_inner(cmd: CodegenCommands) -> Result<()> {
             println!("wrote {}", c_path.display());
 
             if !no_manifest {
-                let manifest = emit_manifest(&pir, &report);
+                let mut manifest = emit_manifest(&pir, &report);
                 let json_path = out_dir.join(format!("{stem}.skw.json"));
+                if !allow_abi_break {
+                    let breaks = check_abi_guard(&json_path, &manifest)?;
+                    if !breaks.is_empty() {
+                        return Err(abi_guard_error(&breaks));
+                    }
+                } else if let Ok(previous) = load_manifest(&json_path) {
+                    manifest = annotate_abi_breaks(manifest, &previous);
+                }
                 fs::write(&json_path, manifest_to_json(&manifest))?;
                 println!("wrote {}", json_path.display());
             }

@@ -1,3 +1,4 @@
+pub mod build;
 pub mod codegen;
 pub mod doctor;
 pub mod link;

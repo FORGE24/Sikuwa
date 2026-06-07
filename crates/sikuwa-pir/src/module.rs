@@ -22,6 +22,51 @@ pub struct Module {
     /// `# skw @c_include` headers required by externs.
     #[serde(default)]
     pub c_includes: Vec<String>,
+    /// `# skw @type` hints keyed by full symbol (`module.func`).
+    #[serde(default)]
+    pub type_hints: std::collections::HashMap<String, FuncTypeHint>,
+}
+
+/// Pass1 type evidence from `# skw @type` directives.
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+pub struct FuncTypeHint {
+    #[serde(default)]
+    pub param_by_name: std::collections::HashMap<String, String>,
+    /// Positional param types (aligned with `def` parameter order).
+    #[serde(default)]
+    pub param_types_pos: Vec<String>,
+    #[serde(default)]
+    pub return_ty: Option<String>,
+}
+
+impl FuncTypeHint {
+    pub fn is_empty(&self) -> bool {
+        self.param_by_name.is_empty() && self.param_types_pos.is_empty() && self.return_ty.is_none()
+    }
+
+    pub fn merge(&mut self, other: Self) {
+        self.param_by_name.extend(other.param_by_name);
+        if !other.param_types_pos.is_empty() {
+            self.param_types_pos = other.param_types_pos;
+        }
+        if other.return_ty.is_some() {
+            self.return_ty = other.return_ty;
+        }
+    }
+
+    pub fn apply_positional_params(&mut self, types: &[String]) -> &mut Self {
+        self.param_types_pos = types.to_vec();
+        self
+    }
+
+    /// Positional types override name hints for the same parameter.
+    pub fn bind_params(&self, param_names: &[String]) -> std::collections::HashMap<String, String> {
+        let mut out = self.param_by_name.clone();
+        for (name, ty) in param_names.iter().zip(self.param_types_pos.iter()) {
+            out.insert(name.clone(), ty.clone());
+        }
+        out
+    }
 }
 
 impl Module {
@@ -36,6 +81,7 @@ impl Module {
             externs: Vec::new(),
             imports: Vec::new(),
             c_includes: Vec::new(),
+            type_hints: std::collections::HashMap::new(),
         }
     }
 
@@ -47,6 +93,16 @@ impl Module {
     pub fn hash_source(source: &[u8]) -> [u8; 32] {
         *blake3::hash(source).as_bytes()
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ExceptionRegion {
+    /// Basic blocks covered by `try` (normal control-flow).
+    pub protected: Vec<BlockId>,
+    /// Handler blocks (exceptional edges only).
+    pub handlers: Vec<BlockId>,
+    #[serde(default)]
+    pub finally: Option<BlockId>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -62,6 +118,9 @@ pub struct FuncDef {
     pub return_value: Option<ValueId>,
     pub blocks: Vec<Block>,
     pub span: Span,
+    /// `try` / `except` / `finally` regions for exceptional-edge pruning.
+    #[serde(default)]
+    pub exception_regions: Vec<ExceptionRegion>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -183,6 +242,7 @@ pub fn sample_add_module() -> Module {
             },
         }],
         span: Span::single_line("sample.py", 1),
+        exception_regions: Vec::new(),
     };
 
     Module {
@@ -195,5 +255,6 @@ pub fn sample_add_module() -> Module {
         externs: Vec::new(),
         imports: Vec::new(),
         c_includes: Vec::new(),
+        type_hints: std::collections::HashMap::new(),
     }
 }

@@ -1,0 +1,40 @@
+{
+  "manifest_version": "1.0",
+  "abi": "1.0",
+  "module": "add",
+  "source_hash": "6570214233c49ebc24da22a840be31b727cc6da5ba2a489a240a5062a58d4eff",
+  "exports": [
+    {
+      "symbol": "add.add",
+      "c_symbol": "skw_add_add",
+      "slot": "S0",
+      "signature": {
+        "params": [
+          {
+            "name": "a",
+            "type": "int64"
+          },
+          {
+            "name": "b",
+            "type": "int64"
+          }
+        ],
+        "return_type": "int64"
+      },
+      "static_eligible": true
+    }
+  ],
+  "imports": [],
+  "itr_slots": [
+    {
+      "logical": "a",
+      "physical": "int64",
+      "strategy": "itr"
+    },
+    {
+      "logical": "b",
+      "physical": "int64",
+      "strategy": "itr"
+    }
+  ]
+}

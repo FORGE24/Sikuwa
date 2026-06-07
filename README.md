@@ -1,6 +1,6 @@
 # Sikuwa
 
-**Sikuwa 2.0.0** — Python 构建与编译工具链  
+**Sikuwa 2.0.0-beta.1** — Python 构建与编译工具链  
 **代号**：Sikuwa 2026/6/6 **Ver.A2**
 
 ---
@@ -9,10 +9,10 @@
 
 | 分支 | 说明 |
 |------|------|
-| **2.0 (Rust)** | 自研 PythonIR + PyStat + Native Codegen（进行中） |
+| **2.0 (Rust)** | PythonIR + PyStat Pass0–5 + S0/S1/S3 Native Codegen + 闭包/多模块 build |
 | **1.x (Python)** | 根目录遗留代码，维护模式 |
 
-当前里程碑：**Plan 1** — 工程底座 + PythonIR 骨架。
+当前里程碑：**Plan 8 beta** — GA Definition of Done（G1–G6）已打通； soak 后打 `2.0.0` tag。
 
 ---
 
@@ -21,6 +21,7 @@
 ### 环境
 
 - Rust **1.75+**（见 `rust-toolchain.toml`）
+- C 编译器（Linux/macOS: `gcc`；Windows: MinGW `gcc`）
 
 ### 构建
 
@@ -34,9 +35,20 @@ cargo build --release
 cargo run -- version
 cargo run -- doctor
 cargo run -- pir build tests/fixtures/add.py
-cargo run -- pir text tests/fixtures/clamp.py
-cargo run -- pir verify
-cargo run -- validate -c sikuwa.a2.toml
+cargo run -- pystat report tests/fixtures/narrow_if.py --json
+cargo run -- pystat verify --preset ci --all
+cargo run -- codegen c tests/fixtures/add.py --out-dir out/ --opt
+cargo run -- build tests/fixtures/plan5_caller.py -o dist/ --opt
+cargo run -- link shared out/ -o dist/libadd.so
+cargo run -- validate -c sikuwa.toml
+```
+
+### Smoke 测试
+
+```bash
+bash scripts/ffi-smoke.sh          # add.py 端到端
+bash scripts/closure-smoke.sh      # plan3 闭包
+bash scripts/multimodule-smoke.sh  # plan5_caller 跨模块
 ```
 
 ---
@@ -49,7 +61,7 @@ cargo run -- validate -c sikuwa.a2.toml
                          Nuitka Backend（可选，Plan 2+）
 ```
 
-详见 [docs/rfc/](docs/rfc/)。
+详见 [docs/rfc/](docs/rfc/) 与 [docs/PLAN8.md](docs/PLAN8.md)。
 
 ---
 

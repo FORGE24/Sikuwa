@@ -1,11 +1,17 @@
 use std::collections::HashMap;
 use std::fmt::Write;
 
-use sikuwa_pir::module::{FuncDef, Module, Op, OpOperand, Terminator};
+use sikuwa_pir::module::{ExternDecl, FuncDef, Module, Op, OpOperand, Terminator};
 use sikuwa_pir::opcode::OpCode;
 use sikuwa_pystat::FuncStat;
 use sikuwa_pystat::PystatReport;
+use sikuwa_pystat::SlotLevel;
 
+use crate::closure::{emit_make_closure_op, emit_nested_impls, is_closure_factory};
+use crate::slots::{
+    collect_func_defs, emit_params, extern_type_to_c, module_slot_label, needs_hotpath_header,
+    return_c_type, tier_for, CodegenTier,
+};
 use crate::structs::emit_structs_h;
 
 pub const SKW_ABI_STRING: &str = "1.0";
@@ -19,6 +25,8 @@ pub struct CodegenOptions {
     pub emit_structs: bool,
     /// Emit `{module}_pywrap.c` for CPython extension
     pub python_shim: bool,
+    /// Cross-module callee stats for Call arg coercion (Plan 8d build)
+    pub peer_funcs: HashMap<String, FuncStat>,
 }
 
 impl Default for CodegenOptions {
@@ -28,6 +36,7 @@ impl Default for CodegenOptions {
             emit_module_desc: true,
             emit_structs: true,
             python_shim: false,
+            peer_funcs: HashMap::new(),
         }
     }
 }
@@ -46,24 +55,34 @@ pub fn emit_module_h(pir: &Module, report: &PystatReport, opts: &CodegenOptions)
     let _ = writeln!(out, "#define {guard}");
     let _ = writeln!(out, "#include \"sikuwa/abi.h\"");
     let _ = writeln!(out, "#include \"sikuwa/runtime.h\"");
+    if needs_hotpath_header(report) {
+        let _ = writeln!(out, "#include \"sikuwa/hotpath.h\"");
+    }
     if opts.emit_module_desc {
         let _ = writeln!(out, "#include \"sikuwa/module.h\"");
     }
     let _ = writeln!(out);
-    for f in &report.module.functions {
-        if !f.static_eligible {
+    if opts.emit_structs {
+        emit_structs_h(pir, &mut out);
+    }
+    let func_by_sym: HashMap<_, _> = collect_func_defs(pir)
+        .into_iter()
+        .map(|f| (f.symbol.0.clone(), f))
+        .collect();
+    for stat in &report.module.functions {
+        let Some(func) = func_by_sym.get(&stat.symbol.0) else {
             continue;
-        }
-        let params: Vec<String> = f
-            .params
-            .iter()
-            .map(|p| format!("{} {}", p.ty.c_type(), sanitize(&p.name)))
-            .collect();
+        };
+        let Some(tier) = tier_for(stat, func) else {
+            continue;
+        };
+        let c_sym = export_c_symbol(&stat.symbol.0, tier);
+        let params = emit_params(stat, func, tier);
         let _ = writeln!(
             out,
             "SKW_API {} {}({});",
-            f.return_ty.c_type(),
-            skw_c_symbol(&f.symbol.0),
+            return_c_type(stat, tier, func),
+            c_sym,
             params.join(", ")
         );
     }
@@ -73,9 +92,6 @@ pub fn emit_module_h(pir: &Module, report: &PystatReport, opts: &CodegenOptions)
             "SKW_API extern const skw_module_t skw_module_{};",
             module_c_name(&report.module.module)
         );
-    }
-    if opts.emit_structs {
-        emit_structs_h(pir, &mut out);
     }
     let _ = writeln!(out);
     let _ = writeln!(out, "#endif /* {guard} */");
@@ -95,29 +111,53 @@ pub fn emit_module_c(pir: &Module, report: &PystatReport, opts: &CodegenOptions)
         }
         let _ = writeln!(out, "/* link: {} */", ext.library);
     }
+    for imp in &pir.imports {
+        if imp.symbol.ends_with(".*") {
+            continue;
+        }
+        let _ = writeln!(out, "#include \"{}.h\"", imp.module);
+    }
     let _ = writeln!(out, "#include \"{}.h\"", pir.name);
+    if needs_hotpath_header(report) {
+        let _ = writeln!(out, "#include \"sikuwa/hotpath.h\"");
+    }
     if opts.emit_module_desc {
         let _ = writeln!(out, "#include \"sikuwa/module.h\"");
     }
     let _ = writeln!(out);
 
-    let stat_map: HashMap<_, _> = report
+    let mut stat_map: HashMap<_, _> = report
         .module
         .functions
         .iter()
-        .map(|f| (f.symbol.0.clone(), f))
+        .map(|f| (f.symbol.0.clone(), f.clone()))
+        .collect();
+    for (sym, stat) in &opts.peer_funcs {
+        stat_map.entry(sym.clone()).or_insert_with(|| stat.clone());
+    }
+    let extern_map: HashMap<String, ExternDecl> = pir
+        .externs
+        .iter()
+        .cloned()
+        .map(|e| (e.name.clone(), e))
         .collect();
 
-    let mut static_exports: Vec<(&FuncDef, &FuncStat)> = Vec::new();
+    for func in pir.functions.iter().filter(|f| is_closure_factory(f)) {
+        emit_nested_impls(func, &mut out);
+    }
 
-    for func in &pir.functions {
-        if let Some(stat) = stat_map.get(&func.symbol.0) {
-            if stat.static_eligible {
-                emit_func_c(func, stat, &mut out);
-                static_exports.push((func, stat));
-                let _ = writeln!(out);
-            }
-        }
+    let mut static_exports: Vec<(&FuncDef, &FuncStat, CodegenTier)> = Vec::new();
+
+    for func in collect_func_defs(pir) {
+        let Some(stat) = stat_map.get(&func.symbol.0) else {
+            continue;
+        };
+        let Some(tier) = tier_for(stat, func) else {
+            continue;
+        };
+        emit_func_c(func, stat, tier, &extern_map, &stat_map, &mut out);
+        static_exports.push((func, stat, tier));
+        let _ = writeln!(out);
     }
 
     if opts.emit_module_desc && !static_exports.is_empty() {
@@ -130,19 +170,19 @@ pub fn emit_module_c(pir: &Module, report: &PystatReport, opts: &CodegenOptions)
 
 fn emit_module_descriptor(
     pir: &Module,
-    exports: &[(&FuncDef, &FuncStat)],
+    exports: &[(&FuncDef, &FuncStat, CodegenTier)],
     out: &mut String,
 ) {
     let mod_name = module_c_name(&pir.name);
     let _ = writeln!(out, "static skw_fn_entry_t skw_{mod_name}_fns[] = {{");
-    for (func, stat) in exports {
+    for (func, _stat, tier) in exports {
         let _ = writeln!(
             out,
-            "    {{ \"{}\", SKW_SLOT_S0, (void *)({}) }},",
+            "    {{ \"{}\", {}, (void *)({}) }},",
             func.symbol.0,
-            skw_c_symbol(&func.symbol.0)
+            module_slot_label(*tier),
+            export_c_symbol(&func.symbol.0, *tier)
         );
-        let _ = stat; // slot tier from stat in future
     }
     let _ = writeln!(out, "}};");
     let _ = writeln!(out);
@@ -160,39 +200,160 @@ fn emit_module_descriptor(
     let _ = writeln!(out, "}};");
 }
 
-fn emit_func_c(func: &FuncDef, stat: &FuncStat, out: &mut String) {
-    let params: Vec<String> = stat
-        .params
-        .iter()
-        .map(|p| format!("{} {}", p.ty.c_type(), sanitize(&p.name)))
-        .collect();
+fn export_c_symbol(sym: &str, tier: CodegenTier) -> String {
+    match tier {
+        CodegenTier::S3 => skw_c_symbol_dyn(sym),
+        _ => skw_c_symbol(sym),
+    }
+}
+
+pub(crate) struct EmitCtx<'a> {
+    pub tier: CodegenTier,
+    pub externs: &'a HashMap<String, ExternDecl>,
+    pub func: &'a FuncDef,
+    pub func_stats: &'a HashMap<String, FuncStat>,
+}
+
+pub fn skw_c_symbol_dyn(sym: &str) -> String {
+    format!("{}_dyn", skw_c_symbol(sym))
+}
+
+fn emit_func_c(
+    func: &FuncDef,
+    stat: &FuncStat,
+    tier: CodegenTier,
+    externs: &HashMap<String, ExternDecl>,
+    func_stats: &HashMap<String, FuncStat>,
+    out: &mut String,
+) {
+    if tier == CodegenTier::S3 && func_has_unsupported_dyn_ops(func) {
+        emit_func_s3_stub(func, stat, out);
+        return;
+    }
+    let params = emit_params(stat, func, tier);
     let _ = writeln!(
         out,
         "SKW_API {} {}({}) {{",
-        stat.return_ty.c_type(),
-        skw_c_symbol(&func.symbol.0),
+        return_c_type(stat, tier, func),
+        export_c_symbol(&func.symbol.0, tier),
         params.join(", ")
     );
 
     let mut env: HashMap<String, String> = HashMap::new();
-    for p in &func.params {
-        env.insert(p.clone(), sanitize(p));
+    match tier {
+        CodegenTier::ClassMethod => {
+            env.insert("self".into(), "self".into());
+            for p in func.params.iter().skip(1) {
+                env.insert(p.clone(), sanitize(p));
+            }
+        }
+        CodegenTier::Closure => {
+            for p in func.params.iter() {
+                env.insert(p.clone(), sanitize(p));
+            }
+        }
+        _ => {
+            for (p, slot) in func.params.iter().zip(stat.params.iter()) {
+                let raw = sanitize(p);
+                match tier {
+                    CodegenTier::S1 if slot.level == SlotLevel::S1 => {
+                        let unpacked = format!("{raw}_i64");
+                        let _ = writeln!(
+                            out,
+                            "  int64_t {unpacked} = skw_tagged_as_i64(&{raw}, NULL);"
+                        );
+                        env.insert(p.clone(), unpacked);
+                    }
+                    CodegenTier::S3 => {
+                        let _ = writeln!(
+                            out,
+                            "  int64_t {raw}_i64 = skw_value_to_i64({raw}, NULL);"
+                        );
+                        env.insert(p.clone(), format!("{raw}_i64"));
+                    }
+                    _ => {
+                        env.insert(p.clone(), raw);
+                    }
+                }
+            }
+        }
     }
 
+    let ctx = EmitCtx {
+        tier,
+        externs,
+        func,
+        func_stats,
+    };
     let mut temps: HashMap<u32, String> = HashMap::new();
     let mut next_temp = 0u32;
 
     for block in &func.blocks {
         let _ = writeln!(out, "  {}:", block_label(&block.id));
-        emit_block_body(block, out, &mut env, &mut temps, &mut next_temp);
-        emit_terminator(block, out, &temps);
+        emit_block_body(block, out, &mut env, &mut temps, &mut next_temp, &ctx);
+        emit_terminator(block, out, &temps, stat, tier, func);
     }
     let _ = writeln!(out, "}}");
 }
 
-fn block_label(id: &sikuwa_pir::ids::BlockId) -> String {
+fn func_has_unsupported_dyn_ops(func: &FuncDef) -> bool {
+    func.blocks.iter().flat_map(|b| &b.ops).any(|op| {
+        matches!(
+            op.opcode,
+            OpCode::LoadAttr
+                | OpCode::StoreAttr
+                | OpCode::SubscriptLoad
+                | OpCode::SubscriptStore
+                | OpCode::MakeClosure
+                | OpCode::BuildClass
+        )
+    })
+}
+
+fn emit_func_s3_stub(func: &FuncDef, stat: &FuncStat, out: &mut String) {
+    let params = emit_params(stat, func, CodegenTier::S3);
+    let _ = writeln!(
+        out,
+        "SKW_API {} {}({}) {{",
+        return_c_type(stat, CodegenTier::S3, func),
+        skw_c_symbol_dyn(&func.symbol.0),
+        params.join(", ")
+    );
+    for p in &func.params {
+        let _ = writeln!(out, "  (void){};", sanitize(p));
+    }
+    let _ = writeln!(out, "  /* dyn: unsupported IR in Plan 8b stub */");
+    let _ = writeln!(out, "  return skw_value_from_i64(0);");
+    let _ = writeln!(out, "}}");
+}
+
+pub(crate) fn block_label(id: &sikuwa_pir::ids::BlockId) -> String {
     let safe = id.0.replace('-', "_");
     format!("skw_bb_{safe}")
+}
+
+pub(crate) fn emit_op_expr_s0(
+    op: &Op,
+    env: &HashMap<String, String>,
+    temps: &HashMap<u32, String>,
+) -> String {
+    let ctx = EmitCtx {
+        tier: CodegenTier::S0,
+        externs: &HashMap::new(),
+        func: &sikuwa_pir::module::FuncDef {
+            symbol: sikuwa_pir::ids::SymbolRef::new("_.f"),
+            params: vec![],
+            locals: vec![],
+            cellvars: vec![],
+            nested: vec![],
+            return_value: None,
+            blocks: vec![],
+            span: sikuwa_pir::span::Span::single_line("_", 1),
+            exception_regions: vec![],
+        },
+        func_stats: &HashMap::new(),
+    };
+    emit_op_expr(op, env, temps, &ctx)
 }
 
 fn emit_block_body(
@@ -201,6 +362,7 @@ fn emit_block_body(
     env: &mut HashMap<String, String>,
     temps: &mut HashMap<u32, String>,
     next_temp: &mut u32,
+    ctx: &EmitCtx<'_>,
 ) {
     for op in &block.ops {
         if matches!(
@@ -213,11 +375,38 @@ fn emit_block_body(
                     temps.insert(result.0, src);
                 }
             }
+        } else if op.opcode == OpCode::MakeClosure {
+            let captured_vals: Vec<String> = (1..op.operands.len())
+                .map(|i| {
+                    op.operands
+                        .get(i)
+                        .map(|o| operand_expr(o, env, temps))
+                        .unwrap_or_else(|| "0".into())
+                })
+                .collect();
+            emit_make_closure_op(op, ctx.func, out, temps, next_temp, &captured_vals);
+        } else if op.opcode == OpCode::StoreAttr {
+            if let (
+                Some(OpOperand::Value(obj)),
+                Some(OpOperand::Name(attr)),
+                Some(OpOperand::Value(v)),
+            ) = (
+                op.operands.first(),
+                op.operands.get(1),
+                op.operands.get(2),
+            ) {
+                let obj_e = temps
+                    .get(&obj.0)
+                    .cloned()
+                    .unwrap_or_else(|| operand_expr(&OpOperand::Value(*obj), env, temps));
+                let src = temps.get(&v.0).cloned().unwrap_or_else(|| "0".into());
+                let _ = writeln!(out, "  {obj_e}->{attr} = {src};");
+            }
         } else if !matches!(op.opcode, OpCode::StoreFast | OpCode::StoreCell) {
             if let Some(result) = op.result {
                 let name = format!("t{}", next_temp);
                 *next_temp += 1;
-                let expr = emit_op_expr(op, env, temps);
+                let expr = emit_op_expr(op, env, temps, ctx);
                 let _ = writeln!(out, "  {} {} = {};", c_type_for_op(op), name, expr);
                 temps.insert(result.0, name);
             }
@@ -237,6 +426,9 @@ fn emit_terminator(
     block: &sikuwa_pir::module::Block,
     out: &mut String,
     temps: &HashMap<u32, String>,
+    stat: &FuncStat,
+    tier: CodegenTier,
+    _func: &FuncDef,
 ) {
     match &block.term {
         Terminator::Branch { target } => {
@@ -253,10 +445,37 @@ fn emit_terminator(
         }
         Terminator::Return { value: Some(v) } => {
             let ret = temps.get(&v.0).cloned().unwrap_or_else(|| "0".into());
-            let _ = writeln!(out, "  return {};", ret);
+            match tier {
+                CodegenTier::S3 => {
+                    let _ = writeln!(out, "  return skw_value_from_i64({ret});");
+                }
+                CodegenTier::Closure => {
+                    let _ = writeln!(out, "  return {ret};");
+                }
+                CodegenTier::ClassMethod => {
+                    let _ = writeln!(out, "  return;");
+                }
+                CodegenTier::S1
+                    if stat.return_ty.bit_width().is_none()
+                        || matches!(
+                            stat.return_ty,
+                            sikuwa_pystat::PhysicalType::Dyn
+                                | sikuwa_pystat::PhysicalType::Object
+                        ) =>
+                {
+                    let _ = writeln!(out, "  return skw_tagged_from_i64({ret});");
+                }
+                _ => {
+                    let _ = writeln!(out, "  return {};", ret);
+                }
+            }
         }
         Terminator::Return { value: None } => {
-            let _ = writeln!(out, "  return;");
+            if tier == CodegenTier::ClassMethod {
+                let _ = writeln!(out, "  return;");
+            } else {
+                let _ = writeln!(out, "  return;");
+            }
         }
         Terminator::Unreachable => {
             let _ = writeln!(out, "  /* unreachable */");
@@ -264,7 +483,12 @@ fn emit_terminator(
     }
 }
 
-fn emit_op_expr(op: &Op, env: &HashMap<String, String>, temps: &HashMap<u32, String>) -> String {
+fn emit_op_expr(
+    op: &Op,
+    env: &HashMap<String, String>,
+    temps: &HashMap<u32, String>,
+    ctx: &EmitCtx<'_>,
+) -> String {
     let val = |i: usize| -> String {
         op.operands
             .get(i)
@@ -289,23 +513,67 @@ fn emit_op_expr(op: &Op, env: &HashMap<String, String>, temps: &HashMap<u32, Str
         OpCode::CompareNe => format!("{} != {}", val(0), val(1)),
         OpCode::CallExtern => {
             if let Some(OpOperand::Name(name)) = op.operands.first() {
-                let args: Vec<String> = (1..op.operands.len()).map(|i| val(i)).collect();
-                format!("{}({})", name, args.join(", "))
+                let c_name = ctx
+                    .externs
+                    .get(name)
+                    .map(|e| e.c_symbol.as_str())
+                    .unwrap_or(name.as_str());
+                let args: Vec<String> = (1..op.operands.len())
+                    .enumerate()
+                    .map(|(i, op_i)| {
+                        let arg_idx = op_i + 1;
+                        let raw = val(arg_idx);
+                        if let Some(ext) = ctx.externs.get(name) {
+                            if let Some(pt) = ext.param_types.get(i) {
+                                return cast_extern_arg(&raw, pt);
+                            }
+                        }
+                        raw
+                    })
+                    .collect();
+                format!("{}({})", c_name, args.join(", "))
             } else {
                 "0".into()
             }
         }
         OpCode::Call => {
-            let args: Vec<String> = (1..op.operands.len()).map(|i| val(i)).collect();
+            let raw_args: Vec<String> = (1..op.operands.len()).map(|i| val(i)).collect();
             match op.operands.first() {
                 Some(OpOperand::Symbol(sym)) => {
+                    let callee = ctx.func_stats.get(&sym.0);
+                    let args = format_call_args(callee, raw_args);
                     format!("{}({})", skw_c_symbol(&sym.0), args.join(", "))
                 }
-                Some(OpOperand::Name(n)) => format!("{}({})", sanitize(n), args.join(", ")),
+                Some(OpOperand::Name(n)) => format!("{}({})", sanitize(n), raw_args.join(", ")),
                 _ => "0".into(),
             }
         }
         _ => "0".into(),
+    }
+}
+
+fn format_call_args(callee: Option<&FuncStat>, args: Vec<String>) -> Vec<String> {
+    let Some(callee) = callee else {
+        return args;
+    };
+    args.into_iter()
+        .zip(callee.params.iter())
+        .map(|(arg, slot)| coerce_call_arg(&arg, slot))
+        .collect()
+}
+
+fn coerce_call_arg(arg: &str, slot: &sikuwa_pystat::LogicalSlot) -> String {
+    match slot.level {
+        SlotLevel::S1 => format!("skw_tagged_from_i64({arg})"),
+        _ => arg.to_string(),
+    }
+}
+
+fn cast_extern_arg(expr: &str, param_ty: &str) -> String {
+    match extern_type_to_c(param_ty) {
+        "const char*" if !expr.starts_with('"') => format!("(const char *)({expr})"),
+        other if other == "double" => format!("(double)({expr})"),
+        _ => expr.to_string(),
     }
 }
 
@@ -343,7 +611,7 @@ fn escape_c_str(s: &str) -> String {
     s.replace('\\', "\\\\").replace('"', "\\\"")
 }
 
-fn c_type_for_op(op: &Op) -> &'static str {
+pub(crate) fn c_type_for_op(op: &Op) -> &'static str {
     match op.opcode {
         OpCode::UnaryNot
         | OpCode::CompareLt
@@ -366,7 +634,7 @@ pub fn module_c_name(name: &str) -> String {
     name.replace('-', "_").replace('.', "_")
 }
 
-fn sanitize(name: &str) -> String {
+pub(crate) fn sanitize(name: &str) -> String {
     if name == "type" {
         "typ".into()
     } else {
@@ -426,5 +694,47 @@ mod tests {
         let c = emit_module_c(&pir, &report, &CodegenOptions::default());
         assert!(c.contains("goto skw_bb_"));
         assert!(c.contains("skw_clamp_clamp"));
+    }
+
+    #[test]
+    fn emit_s1_tagged_params_with_min_slot() {
+        use sikuwa_pystat::{analyze_module_with_options, PystatOptions, MinSlot};
+        let src = include_str!("../../../tests/fixtures/clamp.py");
+        let pir = lower_source(src, "clamp.py").unwrap();
+        let mut opts = PystatOptions::default();
+        opts.min_slot = MinSlot::Tagged;
+        let report = analyze_module_with_options(&pir, &opts);
+        assert!(!report.module.functions[0].static_eligible);
+        let h = emit_module_h(&pir, &report, &CodegenOptions::default());
+        assert!(h.contains("skw_tagged_t"));
+        assert!(h.contains("sikuwa/hotpath.h"));
+        let c = emit_module_c(&pir, &report, &CodegenOptions::default());
+        assert!(c.contains("skw_tagged_as_i64"));
+    }
+
+    #[test]
+    fn emit_s3_dyn_stub_for_load_attr() {
+        use sikuwa_pystat::{analyze_module_with_options, PystatOptions};
+        let manifest_dir = env!("CARGO_MANIFEST_DIR");
+        let path = format!("{manifest_dir}/../../tests/fixtures/pystat_strict.py");
+        let pir = sikuwa_pir::lower_file(std::path::Path::new(&path)).unwrap();
+        let report = analyze_module_with_options(&pir, &PystatOptions::default());
+        let c = emit_module_c(&pir, &report, &CodegenOptions::default());
+        assert!(c.contains("skw_pystat_strict_dyn_attr_dyn"));
+        assert!(c.contains("skw_value_from_i64"));
+    }
+
+    #[test]
+    fn emit_plan3_closure_and_class() {
+        let src = include_str!("../../../tests/fixtures/plan3.py");
+        let pir = lower_source(src, "plan3.py").unwrap();
+        let report = analyze_module(&pir);
+        let h = emit_module_h(&pir, &report, &CodegenOptions::default());
+        assert!(h.contains("skw_plan3_make_adder_add_closure_t"));
+        assert!(h.contains("skw_plan3_Point___init__"));
+        let c = emit_module_c(&pir, &report, &CodegenOptions::default());
+        assert!(c.contains("skw_plan3_make_adder_add_impl"));
+        assert!(c.contains(".fn = skw_plan3_make_adder_add_impl"));
+        assert!(c.contains("self->x = "));
     }
 }

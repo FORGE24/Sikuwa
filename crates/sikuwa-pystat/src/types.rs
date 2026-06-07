@@ -26,34 +26,8 @@ impl PhysicalType {
     }
 
     pub fn merge(self, other: Self) -> Self {
-        if self == other {
-            return self;
-        }
-        if self == Self::Unknown {
-            return other;
-        }
-        if other == Self::Unknown {
-            return self;
-        }
-        if self.bit_width().is_some()
-            && self.bit_width() == other.bit_width()
-            && matches!(
-                (self, other),
-                (Self::Int64, Self::Bool)
-                    | (Self::Bool, Self::Int64)
-                    | (Self::Int64, Self::Int64)
-                    | (Self::Bool, Self::Bool)
-            )
-        {
-            // Same 64-bit slot — ITR candidate; keep wider int for codegen default.
-            if self == Self::Int64 || other == Self::Int64 {
-                Self::Int64
-            } else {
-                Self::Bool
-            }
-        } else {
-            Self::Dyn
-        }
+        use crate::infer::{from_physical, join, project_to_physical};
+        project_to_physical(join(from_physical(self), from_physical(other)))
     }
 
     pub fn c_type(self) -> &'static str {
@@ -63,18 +37,34 @@ impl PhysicalType {
             Self::Int64 => "int64_t",
             Self::Float64 => "double",
             Self::Str => "const char*",
-            Self::Object | Self::Dyn | Self::Unknown => "sikuwa_value_t",
+            Self::Object | Self::Dyn | Self::Unknown => "skw_value_t *",
+        }
+    }
+
+    /// C type for a slot at the given DTSS tier.
+    pub fn c_type_for_slot(self, level: SlotLevel) -> &'static str {
+        match level {
+            SlotLevel::S1 => "skw_tagged_t",
+            SlotLevel::S2 => "skw_value_t *",
+            SlotLevel::S3 => "skw_value_t *",
+            SlotLevel::S0 => self.c_type(),
         }
     }
 }
 
 /// DTSS slot tier for codegen.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum SlotLevel {
     S0,
     S1,
     S2,
     S3,
+}
+
+/// S1 tagged union arms for codegen (`skw_tagged_t`).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TaggedLayout {
+    pub arms: Vec<String>,
 }
 
 /// How a LogicalSlot is materialized in the native frame.
@@ -94,6 +84,8 @@ pub struct LogicalSlot {
     pub ty: PhysicalType,
     pub strategy: SlotStrategy,
     pub level: SlotLevel,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tagged: Option<TaggedLayout>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

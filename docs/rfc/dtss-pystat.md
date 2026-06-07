@@ -2,7 +2,7 @@
 
 | 字段 | 值 |
 |------|-----|
-| 状态 | Planned (Plan 2) |
+| 状态 | Beta (Plan 8 — 2.0.0-beta.1) |
 | 依赖 | PythonIR v1 |
 
 ## 摘要
@@ -21,11 +21,11 @@
 ## 分析 Pass
 
 1. Pass0 — 解析（复用 PIR）
-2. Pass1 — 注解采集（PEP 484、`.pyi`）
-3. Pass2 — 局部推断
-4. Pass3 — 流敏感 narrow
-5. Pass4 — 约束求解
-6. Pass5 — 降级决策
+2. Pass1 — 注解采集（`# skw @type`、PEP 484、`.pyi` ✅）
+3. Pass2 — 局部推断（strict/min_slot ✅）
+4. Pass3 — 流敏感 narrow（✅ SKW-T004）
+5. Pass4 — 约束求解（Call arity + SCC ✅）
+6. Pass5 — 降级决策（config 驱动 ✅ SKW-T005）
 
 ## 配置
 

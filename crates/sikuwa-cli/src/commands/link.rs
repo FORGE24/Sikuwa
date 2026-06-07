@@ -18,12 +18,15 @@ pub enum LinkCommands {
         /// Extra include directory (repeatable)
         #[arg(short = 'I', long = "include")]
         include: Vec<PathBuf>,
-        /// C compiler executable (default: `$CC` or auto-detect)
+        /// C compiler executable (default: MinGW gcc on Windows, else `$CC` / auto)
         #[arg(long)]
         cc: Option<String>,
         /// Do not link libsikuwa runtime sources
         #[arg(long)]
         no_runtime: bool,
+        /// Do not link hotpath asm (c/src/hotpath only)
+        #[arg(long)]
+        no_hotpath: bool,
     },
 }
 
@@ -48,6 +51,7 @@ fn run_inner(cmd: LinkCommands) -> Result<PathBuf> {
             include,
             cc,
             no_runtime,
+            no_hotpath,
         } => {
             let output = output.unwrap_or_else(|| default_output_path(&input));
             if let Some(parent) = output.parent() {
@@ -67,6 +71,10 @@ fn run_inner(cmd: LinkCommands) -> Result<PathBuf> {
                 include_dirs,
                 compiler: cc,
                 link_runtime: !no_runtime,
+                link_hotpath: !no_hotpath,
+                extra_source_dirs: Vec::new(),
+                library_dirs: Vec::new(),
+                libraries: Vec::new(),
             })?;
             Ok(output)
         }

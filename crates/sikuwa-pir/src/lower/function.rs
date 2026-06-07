@@ -7,7 +7,7 @@ use rustpython_ast::{self as ast, CmpOp, Ranged};
 use sikuwa_core::{Result, SikuwaError};
 
 use crate::ids::{BlockId, SymbolRef, ValueId};
-use crate::module::{Block, ExternDecl, FuncDef, ModuleImport, Op, OpOperand, Phi, PhiIncoming, Terminator};
+use crate::module::{Block, ExternDecl, FuncDef, ExceptionRegion, ModuleImport, Op, OpOperand, Phi, PhiIncoming, Terminator};
 use crate::opcode::OpCode;
 use crate::span::Span;
 
@@ -75,6 +75,7 @@ pub struct FunctionLowerer {
     nested: Vec<FuncDef>,
     module_name: String,
     ctx: LowerContext,
+    exception_regions: Vec<ExceptionRegion>,
 }
 
 impl FunctionLowerer {
@@ -275,7 +276,7 @@ impl FunctionLowerer {
     fn lower_stmt(&mut self, stmt: &ast::Stmt) -> Result<()> {
         match stmt {
             ast::Stmt::Return(ret) => {
-                let span = self.span_from(ret);
+                let _span = self.span_from(ret);
                 let value = match &ret.value {
                     Some(expr) => Some(lower_expr(self, expr)?.into_value(self)?),
                     None => None,
@@ -289,6 +290,7 @@ impl FunctionLowerer {
             ast::Stmt::Assign(assign) => self.lower_assign(assign),
             ast::Stmt::AugAssign(aug) => self.lower_aug_assign(aug),
             ast::Stmt::FunctionDef(fd) => self.lower_nested_function(fd),
+            ast::Stmt::Try(try_stmt) => self.lower_try(try_stmt),
             ast::Stmt::Pass(_) => Ok(()),
             ast::Stmt::Expr(expr) => {
                 if matches!(&*expr.value, ast::Expr::Constant(_)) {
@@ -303,6 +305,49 @@ impl FunctionLowerer {
                 self.file_path
             ))),
         }
+    }
+
+    /// Bare `try` / `except` with `return` bodies (exceptional-edge metadata).
+    fn lower_try(&mut self, try_stmt: &ast::StmtTry) -> Result<()> {
+        if !try_stmt.orelse.is_empty() || !try_stmt.finalbody.is_empty() {
+            return Err(SikuwaError::pir(
+                "try/else and try/finally not supported yet",
+            ));
+        }
+        if try_stmt.handlers.len() != 1 {
+            return Err(SikuwaError::pir("only single except handler supported yet"));
+        }
+        let handler = match &try_stmt.handlers[0] {
+            ast::ExceptHandler::ExceptHandler(h) => h,
+        };
+        if handler.type_.is_some() || handler.name.is_some() {
+            return Err(SikuwaError::pir("only bare except supported yet"));
+        }
+
+        let protected_id = self.current_id.clone();
+        self.lower_stmts(&try_stmt.body)?;
+
+        let handler_id = self.fresh_block_id("except");
+        self.exception_regions.push(ExceptionRegion {
+            protected: vec![protected_id],
+            handlers: vec![handler_id.clone()],
+            finally: None,
+        });
+
+        if !self.block_sealed {
+            return Err(SikuwaError::pir(
+                "try body must end with return (no fallthrough yet)",
+            ));
+        }
+
+        self.start_block(handler_id);
+        self.lower_stmts(&handler.body)?;
+        if !self.block_sealed {
+            return Err(SikuwaError::pir(
+                "except body must end with return (no fallthrough yet)",
+            ));
+        }
+        Ok(())
     }
 
     fn lower_assign(&mut self, assign: &ast::StmtAssign) -> Result<()> {
@@ -788,6 +833,7 @@ pub fn lower_function(
         nested: Vec::new(),
         module_name: module_name.to_string(),
         ctx: ctx.clone(),
+        exception_regions: Vec::new(),
     };
 
     for p in &params {
@@ -830,6 +876,7 @@ pub fn lower_function(
         return_value,
         blocks: lowerer.blocks,
         span: lowerer.span,
+        exception_regions: lowerer.exception_regions,
     })
 }
 

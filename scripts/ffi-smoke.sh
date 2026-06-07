@@ -30,6 +30,9 @@ gcc -O2 -Wall -Werror -fPIC -DSKW_BUILDING_MODULE -I"$ROOT/c/include" \
   "$ROOT/c/src/runtime/value.c" "$ROOT/tests/ffi/runtime_test.c" -o "$BUILD/runtime_test"
 "$BUILD/runtime_test"
 
+echo "==> asm hotpath (x86_64)"
+bash "$ROOT/scripts/asm-smoke.sh"
+
 echo "==> clamp codegen (CFG)"
 cargo run --quiet -- codegen c tests/fixtures/clamp.py --out-dir "$BUILD/clamp"
 grep -q "goto skw_bb_" "$BUILD/clamp/clamp.c"

@@ -67,6 +67,15 @@ enum Commands {
         /// Do not link hotpath asm
         #[arg(long)]
         no_hotpath: bool,
+        /// Also link a standalone `.exe` / binary calling entry `main()`
+        #[arg(long)]
+        exe: bool,
+        /// Log level: quiet | normal | verbose | trace (default: verbose, or `SIKUWA_LOG`)
+        #[arg(long, value_name = "LEVEL")]
+        log_level: Option<String>,
+        /// Suppress codegen tier report (same as `--log-level quiet`)
+        #[arg(short, long)]
+        quiet: bool,
     },
     /// Validate sikuwa.toml (schema v2)
     Validate {
@@ -93,15 +102,24 @@ fn main() {
             allow_abi_break,
             no_runtime,
             no_hotpath,
-        } => commands::build::run(
-            input,
-            out_dir,
-            opt,
-            config,
-            allow_abi_break,
-            no_runtime,
-            no_hotpath,
-        ),
+            exe,
+            log_level,
+            quiet,
+        } => {
+            let level = log_level.as_deref().and_then(sikuwa_core::LogLevel::parse);
+            commands::build::run(
+                input,
+                out_dir,
+                opt,
+                config,
+                allow_abi_break,
+                no_runtime,
+                no_hotpath,
+                exe,
+                level,
+                quiet,
+            )
+        }
         Commands::Validate { config } => commands::validate::run(&config),
     };
     std::process::exit(code);

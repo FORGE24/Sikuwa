@@ -55,8 +55,14 @@ Nuitka 保留为可选 **Backend**（外部进程），不纳入自研 IR。
 | Plan 4 | C ABI + manifest + link + S3 runtime ✅ |
 | Plan 5 | @c_extern + struct codegen + py shim + manifest imports ✅ |
 
+## 后续 Backend（2.5 / 2027）
+
+2.0 GA 后规划 **Ver.B1**：在相同 PIR + PyStat 前端上增加 **Python → LLVM IR** 后端（`sikuwa-codegen-llvm`），与 Sikuwa-C 并存。详见 [../ROADMAP.md](../ROADMAP.md) 与 [llvm-ir-backend.md](./llvm-ir-backend.md)。
+
 ## 参考
 
 - [pythonir-v1.md](./pythonir-v1.md)
 - [dtss-pystat.md](./dtss-pystat.md)
 - [../PLAN1.md](../PLAN1.md)
+- [../ROADMAP.md](../ROADMAP.md)
+- [llvm-ir-backend.md](./llvm-ir-backend.md)

@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Planned（2.5 / 2027 — Ver.B1）
+
+- **Python For LLVM IR**：`sikuwa-codegen-llvm` — PIR + PyStat → LLVM IR（`.ll` / `.bc`）→ 原生产物
+- CLI：`codegen llvm`、`build --backend llvm`
+- 详见 [docs/ROADMAP.md](docs/ROADMAP.md)、[docs/rfc/llvm-ir-backend.md](docs/rfc/llvm-ir-backend.md)
+
 ## 2.0.0-beta.1 — 2026-06-07
 
 Plan 8 (Ver.A2 GA beta) — PyStat Pass2–5、S0/S1/S3 codegen、闭包 runtime、多模块 `sikuwa build`。

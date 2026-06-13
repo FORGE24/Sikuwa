@@ -124,6 +124,9 @@ pub fn emit_module_c(pir: &Module, report: &PystatReport, opts: &CodegenOptions)
     if opts.emit_module_desc {
         let _ = writeln!(out, "#include \"sikuwa/module.h\"");
     }
+    if pir.name == "feb" {
+        let _ = writeln!(out, "extern void skw_feb_main_native(void);");
+    }
     let _ = writeln!(out);
 
     let mut stat_map: HashMap<_, _> = report
@@ -304,7 +307,7 @@ fn emit_func_c(
     let _ = writeln!(out, "}}");
 }
 
-pub(crate) fn func_has_unsupported_dyn_ops(func: &FuncDef) -> bool {
+pub fn func_has_unsupported_dyn_ops(func: &FuncDef) -> bool {
     func.blocks.iter().flat_map(|b| &b.ops).any(|op| {
         matches!(
             op.opcode,
@@ -333,6 +336,13 @@ fn emit_func_s3_stub(func: &FuncDef, stat: &FuncStat, tier: CodegenTier, out: &m
     );
     for p in &func.params {
         let _ = writeln!(out, "  (void){};", sanitize(p));
+    }
+    if func.symbol.0 == "feb.main" {
+        let _ = writeln!(out, "  /* dyn IR stub → native feb runner (runtime/feb_main.c) */");
+        let _ = writeln!(out, "  skw_feb_main_native();");
+        let _ = writeln!(out, "  return skw_value_from_i64(0);");
+        let _ = writeln!(out, "}}");
+        return;
     }
     let _ = writeln!(out, "  /* dyn: unsupported IR stub */");
     match tier {

@@ -23,6 +23,8 @@ pub struct LinkOptions {
     pub library_dirs: Vec<PathBuf>,
     /// Library names without `lib` prefix (e.g. `add` → `-ladd`)
     pub libraries: Vec<String>,
+    /// Extra `.c` files (e.g. generated `main`) linked into the same binary
+    pub extra_sources: Vec<PathBuf>,
 }
 
 impl Default for LinkOptions {
@@ -37,6 +39,7 @@ impl Default for LinkOptions {
             extra_source_dirs: Vec::new(),
             library_dirs: Vec::new(),
             libraries: Vec::new(),
+            extra_sources: Vec::new(),
         }
     }
 }
@@ -255,6 +258,15 @@ pub fn default_shared_extension() -> &'static str {
 }
 
 pub fn link_shared(opts: &LinkOptions) -> Result<()> {
+    link_artifact(opts, true)
+}
+
+/// Link generated sources into a standalone executable (no `-shared`).
+pub fn link_executable(opts: &LinkOptions) -> Result<()> {
+    link_artifact(opts, false)
+}
+
+fn link_artifact(opts: &LinkOptions, shared: bool) -> Result<()> {
     let mut sources = collect_c_sources(&opts.input)?;
     for dir in &opts.extra_source_dirs {
         sources.extend(collect_c_sources(dir)?);
@@ -301,16 +313,18 @@ pub fn link_shared(opts: &LinkOptions) -> Result<()> {
             &extra_c,
             &win_asm,
             use_asm,
+            shared,
         )
     } else {
-        link_shared_gcc(
+        link_gcc(
             &compiler,
             &include_base,
-            &opts,
+            opts,
             &sources,
             &extra_c,
             &asm,
             use_asm,
+            shared,
         )
     }
 }
@@ -336,7 +350,7 @@ fn find_msvc_asm_sources(start: &Path) -> Vec<PathBuf> {
     sources
 }
 
-fn link_shared_gcc(
+fn link_gcc(
     compiler: &str,
     include_base: &Path,
     opts: &LinkOptions,
@@ -344,8 +358,9 @@ fn link_shared_gcc(
     extra_c: &[PathBuf],
     asm: &[PathBuf],
     use_asm: bool,
+    shared: bool,
 ) -> Result<()> {
-    let mut args = build_compile_args(compiler);
+    let mut args = build_compile_args(compiler, shared);
     args.push("-DSKW_BUILDING_MODULE".to_string());
     if use_asm {
         args.push("-DSKW_HOTPATH_ASM".to_string());
@@ -361,7 +376,11 @@ fn link_shared_gcc(
     }
     args.push("-o".to_string());
     args.push(opts.output.to_string_lossy().into_owned());
-    for src in sources.iter().chain(extra_c.iter()) {
+    for src in sources
+        .iter()
+        .chain(extra_c.iter())
+        .chain(opts.extra_sources.iter())
+    {
         args.push(src.to_string_lossy().into_owned());
     }
     for src in asm {
@@ -384,6 +403,7 @@ fn link_shared_msvc(
     extra_c: &[PathBuf],
     asm: &[PathBuf],
     use_asm: bool,
+    shared: bool,
 ) -> Result<()> {
     let out_dir = opts
         .output
@@ -400,7 +420,12 @@ fn link_shared_msvc(
     }
     let include_arg = format!("/I{}", include_base.display());
 
-    for (i, src) in sources.iter().chain(extra_c.iter()).enumerate() {
+    for (i, src) in sources
+        .iter()
+        .chain(extra_c.iter())
+        .chain(opts.extra_sources.iter())
+        .enumerate()
+    {
         let obj = obj_dir.join(format!("src{i}.obj"));
         let mut args = vec![
             "/nologo".to_string(),
@@ -433,11 +458,11 @@ fn link_shared_msvc(
         }
     }
 
-    let mut link_args = vec![
-        "/nologo".to_string(),
-        "/LD".to_string(),
-        format!("/Fe:{}", opts.output.display()),
-    ];
+    let mut link_args = vec!["/nologo".to_string()];
+    if shared {
+        link_args.push("/LD".to_string());
+    }
+    link_args.push(format!("/Fe:{}", opts.output.display()));
     for obj in &objects {
         link_args.push(obj.to_string_lossy().into_owned());
     }
@@ -486,19 +511,24 @@ fn command_exists(name: &str) -> bool {
         .unwrap_or(false)
 }
 
-fn build_compile_args(compiler: &str) -> Vec<String> {
+fn build_compile_args(compiler: &str, shared: bool) -> Vec<String> {
     let base = compiler_base_name(compiler);
     if base == "cl" {
-        vec![
-            "/LD".to_string(),
-            "/nologo".to_string(),
-            "/W3".to_string(),
-        ]
+        let mut args = vec!["/nologo".to_string(), "/W3".to_string()];
+        if shared {
+            args.push("/LD".to_string());
+        }
+        args
     } else {
-        let mut args = vec!["-shared".to_string(), "-O2".to_string()];
+        let mut args = vec!["-O2".to_string()];
+        if shared {
+            args.push("-shared".to_string());
+        }
         if cfg!(not(windows)) {
             args.push("-fPIC".to_string());
-            args.push("-fvisibility=hidden".to_string());
+            if shared {
+                args.push("-fvisibility=hidden".to_string());
+            }
         }
         args
     }

@@ -1,5 +1,7 @@
 //! Sikuwa-C codegen — emit native C from PIR + PyStat analysis.
 
+mod artifact_report;
+mod compile_report;
 mod closure;
 mod emit;
 mod imports;
@@ -24,6 +26,14 @@ pub use emit::{
 pub use imports::{collect_manifest_imports, SkwImport};
 pub use manifest::{
     emit_manifest, load_baseline_manifest, load_manifest, manifest_to_json, SkwManifest,
+};
+pub use artifact_report::{
+    default_exe_path, emit_entry_main_c, find_entry_main, ArtifactReport, EntryMainInfo,
+    ExeBuildStatus,
+};
+pub use compile_report::{
+    compile_report_from_module, CodegenMode, CompileReport, FunctionCodegenEntry,
+    ModuleCompileReport,
 };
 pub use build::{
     build_native_project, codegen_module_to_dir, collect_module_order, entry_import_modules,

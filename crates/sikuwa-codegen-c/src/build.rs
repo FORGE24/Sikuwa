@@ -5,12 +5,16 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use sikuwa_core::{Result, SikuwaError};
-use sikuwa_link::{default_shared_extension, link_shared, LinkOptions};
+use sikuwa_link::{default_shared_extension, link_executable, link_shared, LinkOptions};
 use sikuwa_pir::{lower_file, verify_module};
 use sikuwa_pystat::{peer_summaries_from_stats, PystatOptions, PystatReport};
 
 use crate::{
     abi_guard::{annotate_abi_breaks, check_abi_guard},
+    artifact_report::{
+        default_exe_path, emit_entry_main_c, find_entry_main, ArtifactReport, ExeBuildStatus,
+    },
+    compile_report::{compile_report_from_module, CompileReport},
     emit::{emit_module_c, emit_module_h, CodegenOptions},
     manifest::{emit_manifest, load_manifest, manifest_to_json},
     pipeline::{run_compile_pipeline_with_peers, PipelineMode},
@@ -40,6 +44,8 @@ pub struct BuildProjectOptions {
     pub module: BuildModuleOptions,
     pub link_runtime: bool,
     pub link_hotpath: bool,
+    /// Also link a standalone executable calling entry `main()`.
+    pub link_exe: bool,
 }
 
 impl Default for BuildProjectOptions {
@@ -48,6 +54,7 @@ impl Default for BuildProjectOptions {
             module: BuildModuleOptions::default(),
             link_runtime: true,
             link_hotpath: true,
+            link_exe: false,
         }
     }
 }
@@ -56,7 +63,10 @@ impl Default for BuildProjectOptions {
 pub struct BuildProjectResult {
     pub entry: PathBuf,
     pub output_lib: PathBuf,
+    pub output_exe: Option<PathBuf>,
     pub module_dirs: Vec<PathBuf>,
+    pub compile_report: CompileReport,
+    pub artifact_report: ArtifactReport,
 }
 
 /// Topological order: dependencies first, entry last.
@@ -92,7 +102,7 @@ pub fn codegen_module_to_dir(
     out_dir: &Path,
     opts: &BuildModuleOptions,
     peer_stats: &[sikuwa_pystat::FuncStat],
-) -> Result<PystatReport> {
+) -> Result<(PystatReport, crate::compile_report::ModuleCompileReport)> {
     fs::create_dir_all(out_dir)?;
     let mut pir = lower_file(input)?;
     let mode = if opts.opt {
@@ -109,6 +119,7 @@ pub fn codegen_module_to_dir(
             return Err(SikuwaError::pir(v.errors.join("; ")));
         }
     }
+    let compile = compile_report_from_module(&pir, &report);
     let cg = CodegenOptions {
         emit_module_desc: opts.emit_module_desc,
         emit_structs: true,
@@ -137,7 +148,7 @@ pub fn codegen_module_to_dir(
         manifest = annotate_abi_breaks(manifest, &previous);
     }
     fs::write(json_path, manifest_to_json(&manifest))?;
-    Ok(report)
+    Ok((report, compile))
 }
 
 pub fn build_native_project(
@@ -152,13 +163,16 @@ pub fn build_native_project(
     }
     let mut module_dirs = Vec::new();
     let mut peer_stats: Vec<sikuwa_pystat::FuncStat> = Vec::new();
+    let mut compile_report = CompileReport::default();
     for path in &order {
         let stem = path
             .file_stem()
             .and_then(|s| s.to_str())
             .unwrap_or("module");
         let mod_out = out_dir.join(stem);
-        let report = codegen_module_to_dir(path, &mod_out, &opts.module, &peer_stats)?;
+        let (report, module_compile) =
+            codegen_module_to_dir(path, &mod_out, &opts.module, &peer_stats)?;
+        compile_report.modules.push(module_compile);
         peer_stats.extend(report.module.functions);
         module_dirs.push(mod_out);
     }
@@ -186,14 +200,71 @@ pub fn build_native_project(
         compiler: None,
         link_runtime: opts.link_runtime,
         link_hotpath: opts.link_hotpath,
-        extra_source_dirs: dep_dirs,
+        extra_source_dirs: dep_dirs.clone(),
         library_dirs: Vec::new(),
         libraries: Vec::new(),
+        extra_sources: Vec::new(),
     })?;
+
+    let entry_pir = lower_file(&entry_canon)?;
+    let entry_compile = compile_report
+        .modules
+        .last()
+        .cloned()
+        .unwrap_or_default();
+    let entry_main = find_entry_main(&entry_pir, &entry_compile);
+
+    let mut exe_status = if opts.link_exe {
+        ExeBuildStatus::NoEntryMain
+    } else {
+        ExeBuildStatus::NotRequested
+    };
+    let mut output_exe = None;
+
+    if opts.link_exe {
+        if let Some(main_info) = &entry_main {
+            let _ = fs::remove_file(entry_dir.join("_skw_entry_main.c"));
+            let main_path = out_dir.join(format!("_{entry_stem}_entry_main.c"));
+            fs::write(&main_path, emit_entry_main_c(main_info, entry_stem))?;
+            let exe_path = default_exe_path(out_dir, entry_stem);
+            match link_executable(&LinkOptions {
+                input: entry_dir.clone(),
+                output: exe_path.clone(),
+                include_dirs: dep_dirs.clone(),
+                compiler: None,
+                link_runtime: opts.link_runtime,
+                link_hotpath: opts.link_hotpath,
+                extra_source_dirs: dep_dirs,
+                library_dirs: Vec::new(),
+                libraries: Vec::new(),
+                extra_sources: vec![main_path],
+            }) {
+                Ok(()) => {
+                    output_exe = Some(exe_path.clone());
+                    exe_status = ExeBuildStatus::Linked(exe_path);
+                }
+                Err(e) => {
+                    exe_status = ExeBuildStatus::Failed(e.to_string());
+                }
+            }
+        }
+    }
+
+    let artifact_report = ArtifactReport {
+        dll_path: output_lib.clone(),
+        dll_built: true,
+        exe_requested: opts.link_exe,
+        exe_status,
+        entry_main,
+    };
+
     Ok(BuildProjectResult {
         entry: entry_canon,
         output_lib,
+        output_exe,
         module_dirs,
+        compile_report,
+        artifact_report,
     })
 }
 

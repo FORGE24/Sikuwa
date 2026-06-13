@@ -14,6 +14,8 @@
 
 当前里程碑：**Plan 8 beta** — GA Definition of Done（G1–G6）已打通； soak 后打 `2.0.0` tag。
 
+**后续版本**：[docs/ROADMAP.md](docs/ROADMAP.md) — **2.5（2027 / Ver.B1）** 目标含 **Python → LLVM IR** 后端（`sikuwa-codegen-llvm`）。
+
 ---
 
 ## 快速开始（2.0 Rust CLI）

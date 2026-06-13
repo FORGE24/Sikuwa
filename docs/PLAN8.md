@@ -229,3 +229,4 @@ flowchart LR
 - [PLAN7.md](PLAN7.md) — Pass1 / ABI 守卫
 - [rfc/dtss-pystat.md](rfc/dtss-pystat.md) — Pass 定义
 - [rfc/native-c-ffi.md](rfc/native-c-ffi.md) — S0–S3、闭包 §6
+- [ROADMAP.md](ROADMAP.md) — **2.5（2027）** 含 Python → LLVM IR 后端

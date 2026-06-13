@@ -75,6 +75,7 @@ fn run_inner(cmd: LinkCommands) -> Result<PathBuf> {
                 extra_source_dirs: Vec::new(),
                 library_dirs: Vec::new(),
                 libraries: Vec::new(),
+                extra_sources: Vec::new(),
             })?;
             Ok(output)
         }
